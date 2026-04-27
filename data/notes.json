@@ -1,0 +1,29 @@
+{
+  "categories": [
+    {
+      "id": 0,
+      "name": "badtime_word"
+    },
+    {
+      "id": 1,
+      "name": "lid_close"
+    },
+    {
+      "id": 2,
+      "name": "lid_hinge"
+    },
+    {
+      "id": 3,
+      "name": "lid_open"
+    },
+    {
+      "id": 4,
+      "name": "pill_box"
+    }
+  ],
+  "info": {
+    "year": 2026,
+    "version": "1.0",
+    "contributor": "Label Studio"
+  }
+}

@@ -1,0 +1,63 @@
+Labels
+    bedtime_word
+    lid_close
+    lid_hinge
+    lid_open
+    pill_box
+      <View>
+        <Image name="image" value="$image"/>
+        <RectangleLabels name="label" toName="image" 
+                        rotateControl="true" model_obb="true"
+                        model_oath="best.pt" model_score_threshold="0">
+          <Label value="badtime_word" background="yellow"/>
+          <Label value="lid_close" background="orange"/>
+          <Label value="lid_hinge" background="#CC66FF"/>
+          <Label value="lid_open" background="green"/>
+          <Label value="pill_box" background="#3799FF"/>
+        </RectangleLabels>
+      </View>
+
+NotePAd by 框物體 > 做標記
+  標記範圍（Bounding Box）的原則通常是：一致性與特徵顯著性。
+  !!所有的圖片都必須維持同樣的標準。
+    如果一張有框、一張沒框，模型會產生混淆（Loss 難以下降）。!!
+  !!部分遮擋 (可判斷特徵):手指壓住轉軸一小部分，但可看出轉軸線條 > 框！（根據沒被擋住的部分推測且框住完整邊界）
+    完全遮擋 (不可見)	：被掀開的蓋子徹底擋住 / 像素非常模糊、失焦，肉眼都難以確認 / 看不出轉軸的線條走向，無法在腦中畫出那條完整的直線 > 不框！!
+  !!處理「斜視圖」時：「寧可包含完整的物體邊緣，也不要為了追求純淨而切碎物體。」!!
+  !!「對齊」是為了數學（ROI），「包覆」是為了大腦（辨識）。!!
+
+  pill_box > ROI
+  lid_open & lid_close > include all lid's detail
+  lid_hinge & badtime_word > pill_box's direction
+
+  「盡量」不要包含多餘背景。
+    pill_box : 左側tab&右側hinge&厚(高)度不框，頭尾框到背景沒關係。(長方形盡量與其他圖片相等)
+    lid_hinge : 盡量緊貼轉軸邊緣。
+
+  寧願「多一點背景」也不要「切到物體」> 「邊緣特徵的完整性」。
+    lid_open、lid_close : tab、hinge框。
+    bedtime_word : 寧可多框一點背景，也要保證文字筆畫完整。
+
+Train建議
+  開啟 degrees (旋轉)
+
+  小量試錯：先標註約 30-50 張 圖片並匯出 JSON。
+  驗證格式：檢查 pill_box 的 rotation 數值是否正確儲存。
+  模型首測：寫一段簡單的 Python + OpenCV 程式碼。
+            嘗試將這些 pill_box 的區域裁切出來，並依照 ROI 4等分 進行自動切割。
+            看看切出來的四個小圖中，蓋子是不是都在中間。
+            看看 bedtime_word 的偵測框是否能穩定落在文字上。
+
+  YOLO 定位藥盒 -> 旋轉校正 -> 特徵（字樣）校正方向 -> 四等分 ROI 切割」 的流程
+                  bedtime_word.y
+
+TRAIN TO DO
+  export YOLO v8 OBB zip
+    export YOLO_v8_OBB.
+      go google colab train.
+          best.pt in docker_....ysml replace.
+            terminal:docker-compose up --build
+              ngrok reStart
+                label studio > setting 
+                                > model > copy link in ngrok
+                                > labeling > add model.path=best.pt & model_throsld=0.2
