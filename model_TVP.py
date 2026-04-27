@@ -27,14 +27,14 @@ if __name__ == "__main__":
     #predict
     model = YOLO("./runs/obb/Yolo26s_OBB_Train/d0427_v1_e100_b16_i640/weights/best.pt")
     results = model.predict(
+        source=0,
+        stream=True,
+        device=0,
+        workers=0,
+    )
         # source="./data/validation/images",
         # device=0,
         # workers=0,
         # save=True,
         # project="Yolo26s_OBB_Predict",
         # name="d0427_v1_b16_i640"
-        source=0,
-        stream=True,
-        device=0,
-        workers=0,
-    )
