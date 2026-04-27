@@ -5,9 +5,9 @@ if __name__ == "__main__":
     results = model.train(
     data="./data.yaml",
     epochs=2,
-    batch=8,
+    batch=16,
     imgsz=640,
     device=0,
     project="Yolo26n_OBB_Train",
-    name="d0427_v1_e100_b8_i640"
+    name="d0427_v1_e2_b16_i640"
     )
