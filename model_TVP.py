@@ -29,9 +29,14 @@ if __name__ == "__main__":
     results = model.predict(
         source=0,
         stream=True,
+        show=True,
         device=0,
         workers=0,
     )
+    for result in results:
+        obbs = result.obb
+        classes = result.obb.cls
+
         # source="./data/validation/images",
         # device=0,
         # workers=0,
