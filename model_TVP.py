@@ -27,11 +27,11 @@ if __name__ == "__main__":
     #predict
     model = YOLO("./runs/obb/Yolo26s_OBB_Train/d0427_v1_e100_b16_i640/weights/best.pt")
     results = model.predict(
-        source=0,
+        source=1,
         stream=True,
         show=True,
-        device=0,
-        workers=0,
+        # device=0,
+        # workers=0,
     )
     for result in results:
         obbs = result.obb
