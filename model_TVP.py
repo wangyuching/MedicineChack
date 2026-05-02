@@ -25,17 +25,18 @@ if __name__ == "__main__":
     # )
 
     #predict
-    model = YOLO("./runs/obb/Yolo26s_OBB_Train/d0427_v1_e100_b16_i640/weights/best.pt")
-    results = model.predict(
-        source=1,
-        stream=True,
-        show=True,
-        # device=0,
-        # workers=0,
-    )
-    for result in results:
-        obbs = result.obb
-        classes = result.obb.cls
+    # model = YOLO("./runs/obb/Yolo26s_OBB_Train/d0427_v1_e100_b16_i640/weights/best.pt")
+    # results = model.predict(
+    #     source=1,
+    #     stream=True,
+    #     show=True,
+    #     # device=0,
+    #     # workers=0,
+    # )
+    # for result in results:
+    #     obbs = result.obb
+    #     classes = result.obb.cls
+    #     print(result.obb)
 
         # source="./data/validation/images",
         # device=0,
@@ -43,3 +44,14 @@ if __name__ == "__main__":
         # save=True,
         # project="Yolo26s_OBB_Predict",
         # name="d0427_v1_b16_i640"
+
+    #export
+    mkdir /content/my_model
+    cp /content/runs/detect/train/weights/best.pt /content/my_model/my_model.pt
+    cp -r /content/runs/detect/train /content/my_model
+
+    # Zip into "my_model.zip"
+    %cd my_model
+    zip /content/my_model.zip my_model.pt
+    zip -r /content/my_model.zip train
+    %cd /content

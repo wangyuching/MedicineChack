@@ -1,5 +1,0 @@
-badtime_word
-lid_close
-lid_hinge
-lid_open
-pill_box
