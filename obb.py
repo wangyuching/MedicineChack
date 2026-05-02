@@ -1,7 +1,7 @@
 import cv2
 from ultralytics import YOLO
 
-model = YOLO("my_model.pt")
+model = YOLO("best_float32.tflite", task="obb")
 
 cap = cv2.VideoCapture(1)
 
