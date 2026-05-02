@@ -40,7 +40,7 @@ if (not os.path.exists(model_path)):
     sys.exit(0)
 
 # Load the model into memory and get labemap
-model = YOLO(model_path, task='detect')
+model = YOLO(model_path, task='obb')
 labels = model.names
 
 # Parse input to determine if image source is a file, folder, video, or USB camera

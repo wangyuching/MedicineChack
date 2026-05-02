@@ -46,5 +46,5 @@ if __name__ == "__main__":
         # name="d0427_v1_b16_i640"
 
     #export
-    model = YOLO("best.pt", task="obb")
-    model.export(format="tflite")
+    model = YOLO("best.pt")
+    model.export(format="onnx")
