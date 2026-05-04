@@ -14,7 +14,7 @@ target_cls = 4
 
 for r in results:
     classes = r.obb.cls
-    boxes = r.obb.xyxyxyxy #rb 2 lb
+    boxes = r.obb.xyxyxyxy #rb[0] rt[1] lt[2] lb[3]
 
     mask = (classes == target_cls)
 
@@ -27,11 +27,17 @@ for r in results:
 
     for box in filter_boxes:
         points = box.numpy().astype(np.int32)
-        print(points)
+        print(points, end="\n\n")
         cv2.polylines(img, [points], isClosed=True, color=(0, 0, 255), thickness=2)
-        cv2.circle(img, points[3], 2, color=(0, 255, 0), thickness=2)
+        
+        # print(points[0][0])
+        roi = img[(points[2][1]):(points[0][1]), (points[2][0]):(points[0][0])]
+        cv2.imshow("roi", roi)
+
+
+    
 
 cv2.imshow("poly", img)
-# cv2.imwrite("poly.png",img)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
+
