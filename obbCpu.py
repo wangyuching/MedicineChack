@@ -1,11 +1,18 @@
-import cv2
 import time
+import os
 import numpy as np
+import cv2
 from ultralytics import YOLO
 
 model = YOLO("best.pt", task="obb") #best.float32.tflite, best.onnx
 
 cap = cv2.VideoCapture(1)
+
+image_folder = "image"
+if not os.path.exists(image_folder):
+    os.makedirs(image_folder)
+    print(f"Create folder {image_folder} success")
+image_number = 0
 
 avg_frame_rate = 0
 frame_rate_buffer = []
@@ -23,12 +30,23 @@ while cap.isOpened():
         results = model(frame)
         annotated_frame = results[0].plot()
         # Draw framerate
-        cv2.putText(annotated_frame, f'FPS: {avg_frame_rate:0.2f}', (10,20), cv2.FONT_HERSHEY_SIMPLEX, .7, (0,255,255), 2)
+        cv2.putText(annotated_frame, f"FPS: {avg_frame_rate:0.2f}", (10,20), cv2.FONT_HERSHEY_SIMPLEX, .7, (0,255,255), 2)
 
         cv2.imshow("YOLO26 OBB Streaming", annotated_frame)
 
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord("q") or key == ord("Q"):
             break
+        elif key == ord("s") or key == ord("S"):
+            original_image_name = os.path.join(image_folder,f"original{image_number}.png")
+            cv2.imwrite(original_image_name, frame)
+            print(f"Save {original_image_name} success")
+
+            annotated_image_name = os.path.join(image_folder,f"annotated{image_number}.png")
+            cv2.imwrite(annotated_image_name, annotated_frame)
+            print(f"Save {annotated_image_name} success")
+            
+            image_number += 1
 
         # Calculate FPS for this frame
         t_stop = time.perf_counter()
