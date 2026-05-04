@@ -1,11 +1,12 @@
 from ultralytics import YOLO
 import os
 import cv2
+import numpy as np
 
 model = YOLO("best.pt", task="obb") #best.float32.tflite, best.onnx
 current_folder = os.path.dirname(os.path.abspath(__file__))
-img = os.path.join(current_folder,"image", "original0.png")
-print(type(img))
+img = cv2.imread(os.path.join(current_folder,"image", "original0.png"))
+# print(type(img))
 results = model(img)
 
 target_cls = 4
@@ -26,13 +27,13 @@ for r in results:
         print(f"There's no objects for Class {target_cls}")
 
     for box in filter_boxes:
-        points = box.numpy()
-        print(points)
-    
-
-# # 矩形 (圖片, 左上角座標, 右下角座標, 顏色BGR, 線條粗細/填滿)
-# cv2.rectangle(img, (50, 50), (250, 150), (0, 0, 255), 2)  
-
+        points = box.numpy().astype(np.int32)
+        # print(points)
+        cv2.polylines(img, [points], isClosed=True, color=(0, 0, 255), thickness=2)
+cv2.imshow("obb draw point", img)
+cv2.imwrite("poly.png",img)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
 
 # cap = cv2.VideoCapture(1)
 
