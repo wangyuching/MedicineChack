@@ -14,7 +14,7 @@ target_cls = 4
 for r in results:
     classes = r.obb.cls
     # boxes = r.obb.xywhr
-    boxes = r.obb.xyxyxyxy
+    boxes = r.obb.xywhr
 
     mask = (classes == target_cls)
 
@@ -27,11 +27,15 @@ for r in results:
         print(f"There's no objects for Class {target_cls}")
 
     for box in filter_boxes:
-        points = box.numpy().astype(np.int32)
-        # print(points)
-        cv2.polylines(img, [points], isClosed=True, color=(0, 0, 255), thickness=2)
+        x, y, w, h, r = box.numpy()
+        r2deg = np.degrees(r)
+        rect = ((float(x), float(y)), (float(w), float(h)), float(r2deg))
+        box_points = cv2.boxPoints(rect)
+        box_points = np.int32(box_points)
+        print(box_points)
+        cv2.drawContours(img, [box_points], 0, (0, 0, 255), 2)
 cv2.imshow("obb draw point", img)
-cv2.imwrite("poly.png",img)
+cv2.imwrite("box.png",img)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
 
