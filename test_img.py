@@ -5,9 +5,8 @@ import numpy as np
 
 model = YOLO("best.pt", task="obb") #best.float32.tflite, best.onnx
 current_folder = os.path.dirname(os.path.abspath(__file__))
-img = cv2.imread(os.path.join(current_folder,"image", "original0.png"))
+img = cv2.imread(os.path.join(current_folder,"image", "original.png"))
 cv2.imshow("original", img)
-# print(type(img))
 results = model(img)
 
 target_cls = 4
@@ -33,9 +32,3 @@ for r in results:
 cv2.imshow("poly", img)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
-
-        # # print(points[0][0])
-        # roi = img[(points[2][1]):(points[0][1]), (points[2][0]):(points[0][0])]
-        # print(roi.shape)
-        # if roi.size > 0:
-        #     cv2.imshow(f"roi{i}", roi)
