@@ -25,19 +25,17 @@ for r in results:
     else:
         print(f"There's no objects for Class {target_cls}")
 
-    for box in filter_boxes:
+    for i, box in enumerate(filter_boxes):
         points = box.numpy().astype(np.int32)
         print(points, end="\n\n")
         cv2.polylines(img, [points], isClosed=True, color=(0, 0, 255), thickness=2)
-        
-        # print(points[0][0])
-        roi = img[(points[2][1]):(points[0][1]), (points[2][0]):(points[0][0])]
-        cv2.imshow("roi", roi)
-
-
-    
 
 cv2.imshow("poly", img)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
 
+        # # print(points[0][0])
+        # roi = img[(points[2][1]):(points[0][1]), (points[2][0]):(points[0][0])]
+        # print(roi.shape)
+        # if roi.size > 0:
+        #     cv2.imshow(f"roi{i}", roi)

@@ -4,9 +4,6 @@ import cv2
 import numpy as np
 
 model = YOLO("best.pt", task="obb") #best.float32.tflite, best.onnx
-current_folder = os.path.dirname(os.path.abspath(__file__))
-img = cv2.imread(os.path.join(current_folder,"image", "original0.png"))
-results = model(img)
 
 cap = cv2.VideoCapture(1)
 
@@ -20,6 +17,7 @@ while cap.isOpened():
         break
     else:
         results = model(frame)
+        poly_frame = frame.copy()
         for r in results:
             classes = r.obb.cls
             boxes = r.obb.xyxyxyxy
@@ -35,15 +33,21 @@ while cap.isOpened():
 
             for box in filter_boxes:
                 points = box.numpy().astype(np.int32)
-                cv2.polylines(frame, [points], isClosed=True, color=(0, 0, 255), thickness=2)
-        cv2.imshow("obb draw point", frame)
+                cv2.polylines(poly_frame, [points], isClosed=True, color=(0, 0, 255), thickness=2)
+        cv2.imshow("poly", poly_frame)
 
         annotated_frame = results[0].plot()
-        cv2.imshow("YOLO26 OBB Streaming", annotated_frame)
+        cv2.imshow("annnotated", annotated_frame)
+
+        cv2.imshow("original", frame)
 
         key = cv2.waitKey(1) & 0xFF
         if key == ord("q") or key == ord("Q"):
             break
+        elif key == ord("s") or key == ord("S"):
+            cv2.imwrite("original.png", frame)
+            cv2.imwrite("poly.png", poly_frame)
+            cv2.imwrite("annotated.png", annotated_frame)
         elif key == ord("p") or key == ord("P"):
             cv2.waitKey()
 
