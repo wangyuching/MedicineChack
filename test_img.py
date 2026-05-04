@@ -6,6 +6,7 @@ import numpy as np
 model = YOLO("best.pt", task="obb") #best.float32.tflite, best.onnx
 current_folder = os.path.dirname(os.path.abspath(__file__))
 img = cv2.imread(os.path.join(current_folder,"image", "original0.png"))
+cv2.imshow("original", img)
 # print(type(img))
 results = model(img)
 
@@ -27,7 +28,8 @@ for r in results:
     for box in filter_boxes:
         points = box.numpy().astype(np.int32)
         cv2.polylines(img, [points], isClosed=True, color=(0, 0, 255), thickness=2)
-cv2.imshow("obb draw point", img)
-cv2.imwrite("poly.png",img)
+
+cv2.imshow("poly", img)
+# cv2.imwrite("poly.png",img)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
