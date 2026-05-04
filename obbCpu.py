@@ -3,7 +3,7 @@ import time
 import numpy as np
 from ultralytics import YOLO
 
-model = YOLO("best.pt", task="obb") #best.float32.tflite
+model = YOLO("best.pt", task="obb") #best.float32.tflite, best.onnx
 
 cap = cv2.VideoCapture(1)
 
