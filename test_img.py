@@ -35,7 +35,7 @@ def draw_target_obb(image, boxes, color, thickness=2):
         points = cv2.boxPoints(rect)
         points = np.int32(points)
     
-        cv2.polylines(img, [points], isClosed=True, color=color, thickness=thickness)
+        cv2.polylines(output_img, [points], isClosed=True, color=color, thickness=thickness)
 
     return output_img
 
