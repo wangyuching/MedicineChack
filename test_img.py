@@ -53,7 +53,7 @@ if __name__ == "__main__":
         boxes = get_target_obb(results, target_cls)
 
         if boxes:
-            print(f"Class {target_cls} has {len(boxes)} object.")
+            print(f"Class {target_cls} has {len(boxes)} objects.")
             result_img = draw_target_obb(img, boxes, (0, 0, 255))
             cv2.imshow("original", img)
             cv2.imshow("poly", result_img)
