@@ -4,6 +4,54 @@ import numpy as np
 import cv2
 from ultralytics import YOLO
 
+def get_target_obb(results, target_cls):
+    filtered_boxes = []
+    for r in results:
+        classes = r.obb.cls
+        boxes = r.obb.xywhr #[center_x, center_y, width, height, rotation_radians]
+
+        mask = (classes == target_cls)
+        target_boxes = boxes[mask]
+
+        if len(target_boxes) > 0:
+            print(f"Class {target_cls} has {len(target_boxes)} objects")
+        else:
+            print(f"There's no objects for Class {target_cls}")
+        
+        for box in target_boxes:
+            filtered_boxes.append(box.numpy()) #.astype(np.int32)
+            
+        return filtered_boxes
+
+def draw_target_obb(image, boxes, color, thickness=2):
+    output_img = image.copy()
+    for box in boxes:
+        x, y, w, h, r = box
+
+        
+        if w > h:
+            orientation = "Horizontal"
+            label_color = (0, 0, 255) #horizontal is red.
+        else:
+            orientation = "Vertical"
+            label_color = (0, 255, 0) #vertical is green.
+        
+        print(f"Object at ({x:.1f}, {y:.1f}) is {orientation} (w={w:.1f}, h={h:.1f})")
+
+
+        angle = np.degrees(r)
+        rect = ((x, y), (w, h), angle)
+
+        points = cv2.boxPoints(rect)
+        points = np.int32(points)
+    
+        cv2.polylines(output_img, [points], isClosed=True, color=color, thickness=thickness)
+
+        cv2.putText(output_img, orientation, (int(x), int(y)), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, label_color, 2)
+
+    return output_img
+
 model = YOLO("best.pt", task="obb") #best.float32.tflite, best.onnx
 
 cap = cv2.VideoCapture(1)
@@ -14,9 +62,7 @@ if not os.path.exists(image_folder):
     print(f"Create folder {image_folder} success")
 image_number = 0
 
-avg_frame_rate = 0
-frame_rate_buffer = []
-fps_avg_len = 200
+target_cls = 4
 
 while cap.isOpened():
 
@@ -29,8 +75,10 @@ while cap.isOpened():
     else:
         results = model(frame)
         annotated_frame = results[0].plot()
-        # Draw framerate
-        cv2.putText(annotated_frame, f"FPS: {avg_frame_rate:0.2f}", (10,20), cv2.FONT_HERSHEY_SIMPLEX, .7, (0,255,255), 2)
+
+        target_boxes = get_target_obb(results, target_cls)
+        if target_boxes:
+            annotated_frame = draw_target_obb(annotated_frame, target_boxes, (255, 255, 255))
 
         cv2.imshow("YOLO26 OBB Streaming", annotated_frame)
 
@@ -47,20 +95,6 @@ while cap.isOpened():
             print(f"Save {annotated_image_name} success")
             
             image_number += 1
-
-        # Calculate FPS for this frame
-        t_stop = time.perf_counter()
-        frame_rate_calc = float(1/(t_stop - t_start))
-
-        # Append FPS result to frame_rate_buffer (for finding average FPS over multiple frames)
-        if len(frame_rate_buffer) >= fps_avg_len:
-            temp = frame_rate_buffer.pop(0)
-            frame_rate_buffer.append(frame_rate_calc)
-        else:
-            frame_rate_buffer.append(frame_rate_calc)
-
-        # Calculate average FPS for past frames
-        avg_frame_rate = np.mean(frame_rate_buffer)
 
 cap.release()
 cv2.destroyAllWindows()
