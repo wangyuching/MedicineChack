@@ -27,7 +27,7 @@ def get_target_obb(results, target_cls):
 def draw_target_obb(image, boxes, color, thickness=2):
     output_img = image.copy()
     for points in boxes:
-        cv2.polylines(img, [points], isClosed=True, color=color, thickness=thickness)
+        cv2.polylines(output_img, [points], isClosed=True, color=color, thickness=thickness)
 
     return output_img
 
@@ -49,6 +49,7 @@ if __name__ == "__main__":
             result_img = draw_target_obb(img, boxes, (0, 0, 255))
             cv2.imshow("original", img)
             cv2.imshow("poly", result_img)
+            cv2.imwrite("poly_xyxyxyxy.png", result_img)
         else:
             print("ERROR")
 
