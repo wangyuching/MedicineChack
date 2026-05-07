@@ -24,6 +24,10 @@ for r in results:
     for i, box in enumerate(filter_boxes):
         points = box.numpy().astype(np.int32)
         
+        print(points, end="\n\n")
+        cv2.polylines(img, [points], isClosed=True, color=(0, 0, 255), thickness=2)
+
+
         p0, p1, p2, p3 = points[0], points[1], points[2], points[3]
         for k in range(1, 4):
             ratio = k / 4.0
@@ -40,65 +44,3 @@ cv2.destroyAllWindows()
     #     points = box.numpy().astype(np.int32)
     #     print(points, end="\n\n")
     #     cv2.polylines(img, [points], isClosed=True, color=(0, 0, 255), thickness=2)
-
-
-    # for i, box in enumerate(filter_boxes):
-    #     points = box.numpy().astype(np.float32)
-
-    #     width = int(np.linalg.norm(points[1] - points[2]))
-    #     height = int(np.linalg.norm(points[1] - points[0]))
-
-    #     disten_points = np.array([
-    #         [width, height], [width, 0], [0, 0], [0, height]
-    #         ], dtype=np.float32)
-
-    #     matrix = cv2.getPerspectiveTransform(points, disten_points)
-    #     cropped_img = cv2.warpPerspective(img, matrix, (width, height))
-    #     w_step = width // 4
-    #     sub_parts = []
-    #     for i in range(4):
-    #         sub_part = cropped_img[:, i*w_step : (i+1)*w_step]
-    #         sub_parts.append(sub_part)
-
-    #         cv2.imshow(f"Part{i}", sub_part)
-
-        #     width = int(np.linalg.norm(points[1] - points[2]))
-        # height = int(np.linalg.norm(points[1] - points[0]))
-
-        # disten_points = np.array([
-        #     [width, height], [width, 0], [0, 0], [0, height]
-        #     ], dtype=np.float32)
-
-        # matrix = cv2.getPerspectiveTransform(points, disten_points)
-        # cropped_img = cv2.warpPerspective(img, matrix, (width, height))
-        # w_step = width // 4
-        # sub_parts = []
-        # for i in range(4):
-        #     sub_part = cropped_img[:, i*w_step : (i+1)*w_step]
-        #     sub_parts.append(sub_part)
-
-        #     # cv2.imshow(f"Part{i}", sub_part)
-        #     cv2.polylines(img, sub_part, isClosed=True, color=(0, 0, 255), thickness=2)
-
-
-
-        # width = int(np.linalg.norm(points[0] - points[1]))
-        # height = int(np.linalg.norm(points[1] - points[2]))
-
-        # if height > width:
-        #     width, height = height, width
-        #     points = points[[1, 2, 3, 0]]
-
-        # disten_points = np.array([
-        #     [width, height], [width, 0], [0, 0], [0, height]
-        #     ], dtype=np.float32)
-
-        # matrix = cv2.getPerspectiveTransform(points, disten_points)
-        # cropped_img = cv2.warpPerspective(img, matrix, (int(width), int(height)))
-        # w_step = width // 4
-        # sub_parts = []
-        # for i in range(4):
-        #     sub_part = cropped_img[:, i*w_step : (i+1)*w_step]
-        #     sub_parts.append(sub_part)
-
-        #     cv2.imshow(f"Part{i}", sub_part)
