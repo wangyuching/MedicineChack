@@ -27,13 +27,6 @@ for r in results:
         print(points, end="\n\n")
         cv2.polylines(img, [points], isClosed=True, color=(0, 0, 255), thickness=2)
 
-        # p0, p1, p2, p3 = points[0], points[1], points[2], points[3]
-        # for k in range(1, 4):
-        #     ratio = k / 4.0
-        #     points_start = np.round(p0 + (p1 - p0) * ratio).astype(np.int32)
-        #     points_end = np.round(p3 + (p2 - p3) * ratio).astype(np.int32)
-
-        #     cv2.line(img, points_start, points_end, color=(0,255,0), thickness=2)
 
 cv2.imshow("img", img)
 cv2.waitKey(0)
@@ -43,3 +36,11 @@ cv2.destroyAllWindows()
     #     points = box.numpy().astype(np.int32)
     #     print(points, end="\n\n")
     #     cv2.polylines(img, [points], isClosed=True, color=(0, 0, 255), thickness=2)
+
+        # p0, p1, p2, p3 = points[0], points[1], points[2], points[3]
+        # for k in range(1, 4):
+        #     ratio = k / 4.0
+        #     points_start = np.round(p0 + (p1 - p0) * ratio).astype(np.int32)
+        #     points_end = np.round(p3 + (p2 - p3) * ratio).astype(np.int32)
+
+        #     cv2.line(img, points_start, points_end, color=(0,255,0), thickness=2)
