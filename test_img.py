@@ -3,62 +3,63 @@ import os
 import cv2
 import numpy as np
 
-model = YOLO("best.pt", task="obb") #best.float32.tflite, best.onnx
-current_folder = os.path.dirname(os.path.abspath(__file__))
-img = cv2.imread(os.path.join(current_folder,"image", "original0.png"))
-# print(type(img))
-results = model(img)
+def load_model(model_path, task="obb"):
+    return YOLO(model_path, task=task)
 
-target_cls = 4
+def get_target_obb(results, target_cls):
+    filtered_boxes = []
+    for r in results:
+        classes = r.obb.cls
+        boxes = r.obb.xywhr #[center_x, center_y, width, height, rotation_radians]
 
-for r in results:
-    classes = r.obb.cls
-    # boxes = r.obb.xywhr
-    boxes = r.obb.xywhr
+        mask = (classes == target_cls)
+        target_boxes = boxes[mask]
 
-    mask = (classes == target_cls)
+        if len(target_boxes) > 0:
+            print(f"Class {target_cls} has {len(target_boxes)} objects")
+        else:
+            print(f"There's no objects for Class {target_cls}")
+        
+        for box in target_boxes:
+            filtered_boxes.append(box.numpy()) #.astype(np.int32)
+            
+        return filtered_boxes
 
-    filter_boxes = boxes[mask]
+def draw_target_obb(image, boxes, color, thickness=2):
+    output_img = image.copy()
+    for box in boxes:
+        x, y, w, h, r = box
+        angle = np.degrees(r)
+        rect = ((x, y), (w, h), angle)
 
-    if len(filter_boxes) > 0:
-        print(f"Class {target_cls} has {len(filter_boxes)} objects")
-        # print(filter_boxes)
+        points = cv2.boxPoints(rect)
+        points = np.int32(points)
+    
+        cv2.polylines(img, [points], isClosed=True, color=color, thickness=thickness)
+
+    return output_img
+
+if __name__ == "__main__":
+    current_folder = os.path.dirname(os.path.abspath(__file__))
+    img = cv2.imread(os.path.join(current_folder,"image", "original.png"))
+
+    if img is None:
+        print("ERRERRRRRRR")
+
     else:
-        print(f"There's no objects for Class {target_cls}")
+        model = load_model("best.pt")
+        results = model(img)
+        target_cls = 4
+        boxes = get_target_obb(results, target_cls)
 
-    for box in filter_boxes:
-        x, y, w, h, r = box.numpy()
-        r2deg = np.degrees(r)
-        rect = ((float(x), float(y)), (float(w), float(h)), float(r2deg))
-        box_points = cv2.boxPoints(rect)
-        box_points = np.int32(box_points)
-        print(box_points)
-        cv2.drawContours(img, [box_points], 0, (0, 0, 255), 2)
-cv2.imshow("obb draw point", img)
-cv2.imwrite("box.png",img)
+        if boxes:
+            print(f"Class {target_cls} has {len(boxes)} object.")
+            result_img = draw_target_obb(img, boxes, (0, 0, 255))
+            cv2.imshow("original", img)
+            cv2.imshow("poly", result_img)
+        else:
+            print("ERROR")
+
+
 cv2.waitKey(0)
 cv2.destroyAllWindows()
-
-# cap = cv2.VideoCapture(1)
-
-# while cap.isOpened():
-
-#     ok, frame = cap.read()
-#     if (not ok) | (frame is None):    ""
-#         print("usb pull out and in again...")
-#         break
-#     else:
-#         results = model(frame)
-#         for r in results:
-#             if r.obb is not None:
-#                 print(r.obb.xyxyxyxy)
-
-#         annotated_frame = results[0].plot()
-#         cv2.imshow("YOLO26 OBB Streaming", annotated_frame)
-
-#         key = cv2.waitKey(1) & 0xFF
-#         if key == ord("q") or key == ord("Q"):
-#             break
-
-# cap.release()
-# cv2.destroyAllWindows()
