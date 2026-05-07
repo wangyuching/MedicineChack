@@ -2,33 +2,56 @@ from ultralytics import YOLO
 import os
 import cv2
 import numpy as np
+def load_model(model_path, task="obb"):
+    return YOLO(model_path, task=task)
 
-model = YOLO("best.pt", task="obb") #best.float32.tflite, best.onnx
-current_folder = os.path.dirname(os.path.abspath(__file__))
-img = cv2.imread(os.path.join(current_folder,"image", "original.png"))
-cv2.imshow("original", img)
-results = model(img)
+def get_target_obb(results, target_cls):
+    filtered_boxes = []
+    for r in results:
+        classes = r.obb.cls
+        boxes = r.obb.xyxyxyxy #rb[0] rt[1] lt[2] lb[3]
 
-target_cls = 4
+        mask = (classes == target_cls)
+        target_boxes = boxes[mask]
 
-for r in results:
-    classes = r.obb.cls
-    boxes = r.obb.xyxyxyxy #rb[0] rt[1] lt[2] lb[3]
+        if len(target_boxes) > 0:
+            print(f"Class {target_cls} has {len(target_boxes)} objects")
+        else:
+            print(f"There's no objects for Class {target_cls}")
+        
+        for box in target_boxes:
+            filtered_boxes.append(box.numpy().astype(np.int32))
+        
+    return filtered_boxes
 
-    mask = (classes == target_cls)
+def draw_target_obb(image, boxes, color, thickness=2):
+    output_img = image.copy()
+    for points in boxes:
+        cv2.polylines(img, [points], isClosed=True, color=color, thickness=thickness)
 
-    filter_boxes = boxes[mask]
+    return output_img
 
-    if len(filter_boxes) > 0:
-        print(f"Class {target_cls} has {len(filter_boxes)} objects")
+if __name__ == "__main__":
+    current_folder = os.path.dirname(os.path.abspath(__file__))
+    img = cv2.imread(os.path.join(current_folder,"image", "original.png"))
+
+    if img is None:
+        print("ERRERRRRRRR")
+
     else:
-        print(f"There's no objects for Class {target_cls}")
+        model = load_model("best.pt")
+        results = model(img)
+        target_cls = 4
+        boxes = get_target_obb(results, target_cls)
 
-    for i, box in enumerate(filter_boxes):
-        points = box.numpy().astype(np.int32)
-        print(points, end="\n\n")
-        cv2.polylines(img, [points], isClosed=True, color=(0, 0, 255), thickness=2)
+        if boxes:
+            print(f"Class {target_cls} has {len(boxes)} object.")
+            result_img = draw_target_obb(img, boxes, (0, 0, 255))
+            cv2.imshow("original", img)
+            cv2.imshow("poly", result_img)
+        else:
+            print("ERROR")
 
-cv2.imshow("poly", img)
+
 cv2.waitKey(0)
 cv2.destroyAllWindows()
