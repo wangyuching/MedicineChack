@@ -22,7 +22,9 @@ while cap.isOpened():
     oh, img = cap.read()
     if not oh:
         break
-    img = cv2.resize(img, (0, 0), fx=0.7, fy=0.7)
+    img = cv2.resize(img, (0, 0), fx=0.5, fy=0.5)
+    img_kernel = img.copy()
+
 
     # hsv:色調、飽和度、亮度
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -40,10 +42,21 @@ while cap.isOpened():
     mask = cv2.inRange(hsv, lower, upper)
     result = cv2.bitwise_and(img, img, mask=mask)
 
+    kernel = np.ones((3, 3), np.uint8)
+    open_kernel = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    open_results = cv2.bitwise_and(img_kernel, img_kernel, mask=open_kernel)
+    
+    close_kernel = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+    close_results = cv2.bitwise_and(img_kernel, img_kernel, mask=close_kernel)
+
     cv2.imshow('img', img)
     cv2.imshow('hsv', hsv)
     cv2.imshow('mask', mask)
     cv2.imshow('result', result)
+    cv2.imshow('open_kernel', open_kernel)
+    cv2.imshow('open_results', open_results)
+    cv2.imshow('close_kernel', close_kernel)
+    cv2.imshow('close_results', close_results)
 
 
     key = cv2.waitKey(1) & 0xFF
