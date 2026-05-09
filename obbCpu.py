@@ -38,14 +38,14 @@ def draw_target_obb(image, boxes, color, thickness=2):
         x, y, w, h, r = box
 
         
-        if w > h:
-            orientation = "Horizontal"
-            label_color = (0, 0, 255) #horizontal is red.
-        else:
-            orientation = "Vertical"
-            label_color = (0, 255, 0) #vertical is green.
+        # if w > h:
+        #     orientation = "Horizontal"
+        #     label_color = (0, 0, 255) #horizontal is red.
+        # else:
+        #     orientation = "Vertical"
+        #     label_color = (0, 255, 0) #vertical is green.
         
-        print(f"Object at ({x:.1f}, {y:.1f}) is {orientation} (w={w:.1f}, h={h:.1f})")
+        # print(f"Object at ({x:.1f}, {y:.1f}) is {orientation} (w={w:.1f}, h={h:.1f})")
 
 
         angle = np.degrees(r)
@@ -56,8 +56,8 @@ def draw_target_obb(image, boxes, color, thickness=2):
     
         cv2.polylines(output_img, [points], isClosed=True, color=color, thickness=thickness)
 
-        cv2.putText(output_img, orientation, (int(x), int(y)), 
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, label_color, 2)
+        # cv2.putText(output_img, orientation, (int(x), int(y)), 
+        #             cv2.FONT_HERSHEY_SIMPLEX, 0.6, label_color, 2)
 
     return output_img
 
