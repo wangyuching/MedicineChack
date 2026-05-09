@@ -4,8 +4,50 @@ import numpy as np
 import cv2
 from ultralytics import YOLO
 
+class ColorFinder:
+    def __init__(self, window_name='Color Trackbar'):
+        self.window_name = window_name
+        cv2.namedWindow(self.window_name)
+        w = int(500*0.7)
+        h = int(350*0.7)
+        cv2.resizeWindow(self.window_name, w, h)
+        
+        # 初始化控制條 (預設值設為 0-179, 0-255, 0-255 即顯示全彩)
+        cv2.createTrackbar('Hue_Min', self.window_name, 0, 179, self._nothing)
+        cv2.createTrackbar('Hue_Max', self.window_name, 179, 179, self._nothing)
+        cv2.createTrackbar('Sat_Min', self.window_name, 0, 255, self._nothing)
+        cv2.createTrackbar('Sat_Max', self.window_name, 255, 255, self._nothing)
+        cv2.createTrackbar('Val_Min', self.window_name, 0, 255, self._nothing)
+        cv2.createTrackbar('Val_Max', self.window_name, 255, 255, self._nothing)
+
+    def _nothing(self, x):
+        pass
+
+    def get_mask_and_result(self, frame):
+        # 轉換為 HSV
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        
+        # 取得目前控制條數值
+        h_min = cv2.getTrackbarPos('Hue_Min', self.window_name)
+        h_max = cv2.getTrackbarPos('Hue_Max', self.window_name)
+        s_min = cv2.getTrackbarPos('Sat_Min', self.window_name)
+        s_max = cv2.getTrackbarPos('Sat_Max', self.window_name)
+        v_min = cv2.getTrackbarPos('Val_Min', self.window_name)
+        v_max = cv2.getTrackbarPos('Val_Max', self.window_name)
+        
+        lower = np.array([h_min, s_min, v_min])
+        upper = np.array([h_max, s_max, v_max])
+        
+        # 產生遮罩與結果
+        mask = cv2.inRange(hsv, lower, upper)
+        result = cv2.bitwise_and(frame, frame, mask=mask)
+        
+        return mask, result
+
 def get_target_obb(results, target_cls):
     filtered_boxes = []
+    name = ["bedtime_Word", "lid_close", "lid_hinge", "lid_open", "pill_box"]
+
     for r in results:
         classes = r.obb.cls
         boxes = r.obb.xywhr #[center_x, center_y, width, height, rotation_radians]
@@ -14,16 +56,7 @@ def get_target_obb(results, target_cls):
         target_boxes = boxes[mask]
 
         if len(target_boxes) > 0:
-            if target_cls == 0:
-                print(f"Class {target_cls} bedtime_word has {len(target_boxes)} objects")
-            elif target_cls == 1:
-                print(f"Class {target_cls} lid_close has {len(target_boxes)} objects")
-            elif target_cls == 2:
-                print(f"Class {target_cls} lid_hinge has {len(target_boxes)} objects")
-            elif target_cls == 3:
-                print(f"Class {target_cls} lid_open has {len(target_boxes)} objects")
-            elif target_cls == 4:
-                print(f"Class {target_cls} pill_box  has {len(target_boxes)} objects")
+            print(f"Class {target_cls} ({name[target_cls]}) has {len(target_boxes)} objects")
         else:
             print(f"There's no objects for Class {target_cls}")
         
@@ -74,9 +107,10 @@ def split_obb(obb_xywhr, axis='w', num_splits=4):
         
     return sub_obbs
 
-model = YOLO("best.pt", task="obb") #best.float32.tflite, best.onnx
 
+model = YOLO("best.pt", task="obb") #best.float32.tflite, best.onnx
 cap = cv2.VideoCapture(1)
+color_finder = ColorFinder("Color Finder")
 
 image_folder = "image"
 if not os.path.exists(image_folder):
@@ -85,16 +119,16 @@ if not os.path.exists(image_folder):
 image_number = 0
 
 while cap.isOpened():
-
-    t_start = time.perf_counter()
-
     ok, frame = cap.read()
     if (not ok) | (frame is None):    
         print("usb pull out and in again...")
         break
     else:
+        frame = cv2.resize(frame, (0, 0), fx=0.7, fy=0.7)
         results = model(frame)
         annotated_frame = results[0].plot()
+
+        mask, color_results = color_finder.get_mask_and_result(frame)
 
         pill_boxes = get_target_obb(results, target_cls=4)
         if pill_boxes:
@@ -108,7 +142,6 @@ while cap.isOpened():
                     sub_boxes = split_obb(box, split_axis, num_splits=4)
                     split_result_img = draw_target_obb(split_result_img, sub_boxes, (0, 255, 0), thickness=1)
                 cv2.imshow("split", split_result_img)
-
             else:
                 print(f"{len(lid_close)} lid_close + {len(lid_open)} lid_open < 4 ")
                 cv2.imshow("split", frame)
@@ -117,6 +150,8 @@ while cap.isOpened():
             print("Cant find object pill_box.")
 
         cv2.imshow("YOLO26 OBB Streaming", annotated_frame)
+        cv2.imshow("hsv mask", mask)
+        cv2.imshow("color filter results", color_results)
 
         key = cv2.waitKey(1) & 0xFF
         if key == ord("q") or key == ord("Q"):
