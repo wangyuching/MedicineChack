@@ -84,8 +84,6 @@ if not os.path.exists(image_folder):
     print(f"Create folder {image_folder} success")
 image_number = 0
 
-# target_cls = 4
-
 while cap.isOpened():
 
     t_start = time.perf_counter()
