@@ -4,46 +4,6 @@ import numpy as np
 import cv2
 from ultralytics import YOLO
 
-class ColorFinder:
-    def __init__(self, window_name='Color Trackbar'):
-        self.window_name = window_name
-        cv2.namedWindow(self.window_name)
-        w = int(500*0.7)
-        h = int(350*0.7)
-        cv2.resizeWindow(self.window_name, w, h)
-        
-        # 初始化控制條 (預設值設為 0-179, 0-255, 0-255 即顯示全彩)
-        cv2.createTrackbar('Hue_Min', self.window_name, 0, 179, self._nothing)
-        cv2.createTrackbar('Hue_Max', self.window_name, 179, 179, self._nothing)
-        cv2.createTrackbar('Sat_Min', self.window_name, 0, 255, self._nothing)
-        cv2.createTrackbar('Sat_Max', self.window_name, 255, 255, self._nothing)
-        cv2.createTrackbar('Val_Min', self.window_name, 0, 255, self._nothing)
-        cv2.createTrackbar('Val_Max', self.window_name, 255, 255, self._nothing)
-
-    def _nothing(self, x):
-        pass
-
-    def get_mask_and_result(self, frame):
-        # 轉換為 HSV
-        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        
-        # 取得目前控制條數值
-        h_min = cv2.getTrackbarPos('Hue_Min', self.window_name)
-        h_max = cv2.getTrackbarPos('Hue_Max', self.window_name)
-        s_min = cv2.getTrackbarPos('Sat_Min', self.window_name)
-        s_max = cv2.getTrackbarPos('Sat_Max', self.window_name)
-        v_min = cv2.getTrackbarPos('Val_Min', self.window_name)
-        v_max = cv2.getTrackbarPos('Val_Max', self.window_name)
-        
-        lower = np.array([h_min, s_min, v_min])
-        upper = np.array([h_max, s_max, v_max])
-        
-        # 產生遮罩與結果
-        mask = cv2.inRange(hsv, lower, upper)
-        result = cv2.bitwise_and(frame, frame, mask=mask)
-        
-        return mask, result
-
 def get_target_obb(results, target_cls):
     filtered_boxes = []
     name = ["bedtime_Word", "lid_close", "lid_hinge", "lid_open", "pill_box"]
@@ -110,7 +70,6 @@ def split_obb(obb_xywhr, axis='w', num_splits=4):
 
 model = YOLO("best.pt", task="obb") #best.float32.tflite, best.onnx
 cap = cv2.VideoCapture(1)
-color_finder = ColorFinder("Color Finder")
 
 image_folder = "image"
 if not os.path.exists(image_folder):
@@ -127,8 +86,6 @@ while cap.isOpened():
         frame = cv2.resize(frame, (0, 0), fx=0.7, fy=0.7)
         results = model(frame)
         annotated_frame = results[0].plot()
-
-        mask, color_results = color_finder.get_mask_and_result(frame)
 
         pill_boxes = get_target_obb(results, target_cls=4)
         if pill_boxes:
@@ -150,8 +107,6 @@ while cap.isOpened():
             print("Cant find object pill_box.")
 
         cv2.imshow("YOLO26 OBB Streaming", annotated_frame)
-        cv2.imshow("hsv mask", mask)
-        cv2.imshow("color filter results", color_results)
 
         key = cv2.waitKey(1) & 0xFF
         if key == ord("q") or key == ord("Q"):
