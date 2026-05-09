@@ -134,7 +134,7 @@ while cap.isOpened():
                     for i, sub_box in enumerate(sub_boxes):
                         has_pill, score = check_pill_in_split_boxes(split_result_img, sub_box, threshold=0.5)
 
-                        color = (0, 0, 255) if has_pill else (0, 255, 0) # 有藥丸顯示紅色，沒藥丸綠色
+                        color = (0, 255, 0) if has_pill else (0, 0, 255)
                         has_pill_result_img = draw_target_obb(split_result_img, [sub_box], color, thickness=2)
     
                         if has_pill:
