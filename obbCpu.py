@@ -1,5 +1,6 @@
 import time
 import os
+from matplotlib.pyplot import box
 import numpy as np
 import cv2
 from ultralytics import YOLO
@@ -67,15 +68,34 @@ def split_obb(obb_xywhr, axis='w', num_splits=4):
         
     return sub_obbs
 
+def check_pill_in_split_box(frame, box, hsv_lower, hsv_upper, threshold=0.08):
+    xc, xy, w, h, r = box
+
+    # rect = ((xc, xy), (w, h), np.degrees(r))
+    M = cv2.getRotationMatrix2D((xc, xy), np.degrees(r), 1)
+    rotated = cv2.warpAffine(frame, M, (frame.shape[1], frame.shape[0]))
+    crop = cv2.getRectSubPix(rotated, (int(w), int(h)), (xc, xy))
+
+    if (crop is None) or (crop.size == 0):
+        return False, np.zeros((10, 10), dtype=np.unit32)
+
+    hsv_img = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
+    mask = cv2.inRange(hsv_img, hsv_lower, hsv_upper)
+
+    white_pixels = cv2.countNonZero(mask)
+    total_pixels = w * h
+    ratio = white_pixels / total_pixels
+
+    has_pill = ratio> threshold
+    print(f"Box {i}: Pill Ratio = {ratio:.2%}")
+
+    return has_pill, mask
 
 model = YOLO("best.pt", task="obb") #best.float32.tflite, best.onnx
 cap = cv2.VideoCapture(1)
 
-image_folder = "image"
-if not os.path.exists(image_folder):
-    os.makedirs(image_folder)
-    print(f"Create folder {image_folder} success")
-image_number = 0
+HSV_LOWER = np.array([0, 71, 0])
+HSV_UPPER = np.array([179, 242, 233])
 
 while cap.isOpened():
     ok, frame = cap.read()
@@ -93,11 +113,28 @@ while cap.isOpened():
             lid_open = get_target_obb(results, target_cls=3)
             if (len(lid_close) + len(lid_open)) >= 4: 
                 split_result_img = frame.copy()
+                
                 for box in pill_boxes:
                     w, h = box[2], box[3]
                     split_axis = "w" if w > h else "h"
                     sub_boxes = split_obb(box, split_axis, num_splits=4)
-                    split_result_img = draw_target_obb(split_result_img, sub_boxes, (0, 255, 0), thickness=1)
+
+                    masks_to_show = []
+                    for i, sub_box in enumerate(sub_boxes):
+                        has_pill, mask = check_pill_in_split_box(split_result_img, sub_box, HSV_LOWER, HSV_UPPER)
+                        resized_mask = cv2.resize(mask, (100, 100))
+                        masks_to_show.append(resized_mask)
+
+                        color = (0, 255, 0) if has_pill else (0, 0, 255)
+                        label = "Full" if has_pill else "Empty"
+                        split_result_img = draw_target_obb(split_result_img, sub_boxes, (0, 255, 0), thickness=1)
+                        cv2.putText(split_result_img, f"#{i}:{label}",
+                                    (int(sub_box[0]-15), int(sub_box[1])),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1)
+                    if len(masks_to_show) >= 4:
+                        all_masks = cv2.hconcat(masks_to_show)
+                        cv2.imshow("every HSV mask", all_masks)
+
                 cv2.imshow("split", split_result_img)
             else:
                 print(f"{len(lid_close)} lid_close + {len(lid_open)} lid_open < 4 ")
@@ -113,16 +150,6 @@ while cap.isOpened():
             break
         elif key == ord("p") or key == ord("P"):
             cv2.waitKey()
-        elif key == ord("s") or key == ord("S"):
-            original_image_name = os.path.join(image_folder,f"original{image_number}.png")
-            cv2.imwrite(original_image_name, frame)
-            print(f"Save {original_image_name} success")
-
-            annotated_image_name = os.path.join(image_folder,f"annotated{image_number}.png")
-            cv2.imwrite(annotated_image_name, annotated_frame)
-            print(f"Save {annotated_image_name} success")
-            
-            image_number += 1
 
 cap.release()
 cv2.destroyAllWindows()
