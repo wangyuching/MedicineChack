@@ -74,6 +74,29 @@ def split_obb(obb_xywhr, axis='w', num_splits=4):
         
     return sub_obbs
 
+def check_pill_in_split_boxes(image, sub_box, threshold):
+    x, y, w, h, r = sub_box
+
+    y1, y2 = max(0, int(y-h/2)), min(image.shape[0], int(y+h/2))
+    x1, x2 = max(0, int(x-w/2)), min(image.shape[1], int(x+w/2))
+    roi = image[y1:y2, x1:x2]
+
+    if roi.size == 0:
+        return False
+    
+    hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+    lower_pill = np.array([0, 70, 70])
+    upper_pill = np.array([179, 255, 255])
+
+    mask = cv2.inRange(hsv, lower_pill, upper_pill)
+
+    pill_pixel_count = cv2.countNonZero(mask)
+    total_pixels = roi.shape[0] * roi.shape[1]
+    ratio = pill_pixel_count / total_pixels
+
+    return ratio > threshold, ratio
+    
+
 model = YOLO("best.pt", task="obb") #best.float32.tflite, best.onnx
 
 cap = cv2.VideoCapture(1)
@@ -107,6 +130,16 @@ while cap.isOpened():
                     split_axis = "w" if w > h else "h"
                     sub_boxes = split_obb(box, split_axis, num_splits=4)
                     split_result_img = draw_target_obb(split_result_img, sub_boxes, (0, 255, 0), thickness=1)
+                    
+                    for i, sub_box in enumerate(sub_boxes):
+                        has_pill, score = check_pill_in_split_boxes(split_result_img, sub_box, threshold=0.5)
+
+                        color = (0, 0, 255) if has_pill else (0, 255, 0) # 有藥丸顯示紅色，沒藥丸綠色
+                        has_pill_result_img = draw_target_obb(split_result_img, [sub_box], color, thickness=2)
+    
+                        if has_pill:
+                            print(f"格子 {i+1}: 偵測到藥丸 (比例: {score:.2%})")
+
                 cv2.imshow("split", split_result_img)
 
             else:
