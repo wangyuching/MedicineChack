@@ -116,19 +116,16 @@ while cap.isOpened():
         if pill_boxes:
             lid_close = get_target_obb(results, target_cls=1)
             lid_open = get_target_obb(results, target_cls=3)
-            if (len(lid_close) + len(lid_open)) >= 4: 
-                split_result_img = frame.copy()
-                for box in pill_boxes:
-                    w, h = box[2], box[3]
-                    split_axis = "w" if w > h else "h"
-                    sub_boxes = split_obb(box, split_axis, num_splits=4)
-                    split_result_img = draw_target_obb(split_result_img, sub_boxes, (0, 255, 0), thickness=1)
-                cv2.imshow("split", split_result_img)
+            print(len(lid_close))
+            
+                # split_result_img = frame.copy()
+                # for box in pill_boxes:
+                #     w, h = box[2], box[3]
+                #     split_axis = "w" if w > h else "h"
+                #     sub_boxes = split_obb(box, split_axis, num_splits=4)
+                #     split_result_img = draw_target_obb(split_result_img, sub_boxes, (0, 255, 0), thickness=1)
 
-            else:
-                print(f"{len(lid_close)} lid_close + {len(lid_open)} lid_open < 4 ")
-                cv2.imshow("split", frame)
-
+                # cv2.imshow("split", split_result_img)
         else:
             print("Cant find object pill_box.")
 
