@@ -125,8 +125,10 @@ cap = cv2.VideoCapture(1)
 HSV_LOWER = np.array([0, 0, 255])
 HSV_UPPER = np.array([179, 255, 255])
 
-ref_vector_local = None
-reverse_state = False
+# ref_vector_local = None
+# reverse_state = False
+base_orient_vec = None
+last_known_reverse = False
 has_once_detect_bedtime_word = False
 
 while cap.isOpened():
@@ -142,51 +144,60 @@ while cap.isOpened():
         bedtime_word = get_target_obb(results, target_cls=0)
         pill_boxes = get_target_obb(results, target_cls=4)
         if pill_boxes:
+            box = pill_boxes[0]
+            px, py, pw, ph, pr = box
+            if pw > ph:
+                curr_axis = np.array([np.cos(pr), np.sin(pr)])
+                split_axis = 'w'
+            else:
+                curr_axis = np.array([-np.sin(pr), np.cos(pr)])
+                split_axis = 'h'
+
+            if bedtime_word:
+                bx, by, bw, bh, br = bedtime_word[0]
+                vec_to_word = np.array([bx - px, by - py])
+                projection = np.dot(vec_to_word, curr_axis)
+
+                last_known_reverse = True if projection < 0 else False
+                base_orient_vec = curr_axis if projection >= 0 else -curr_axis
+                has_once_detect_bedtime_word = True
+                reverse_state = last_known_reverse
+                print("基準更新:偵測到 bedtime_word")
+
+            elif has_once_detect_bedtime_word and base_orient_vec is not None:
+                if np.dot(curr_axis, base_orient_vec) >= 0:
+                    reverse_state = False
+                else:
+                    reverse_state = True
+                print(f"追蹤模式：文字遺失，當前 reverse_state = {reverse_state}")
+            else:
+                reverse_state = False
+
             lid_close = get_target_obb(results, target_cls=1)
             lid_open = get_target_obb(results, target_cls=3)
             if (len(lid_close) + len(lid_open)) >= 4: 
                 split_result_img = frame.copy()
-                for box in pill_boxes:
-                    px, py, pw, ph, pr = box
-                    if bedtime_word:
-                        bx, by, bw, bh, br = bedtime_word[0]
+                sub_boxes = split_obb(box, split_axis, num_splits=4, reverse=reverse_state)
 
-                        dx, dy = bx - px, by - py
-                        rx = dx * np.cos(-pr) - dy * np.sin(-pr)
-                        ry = dx * np.sin(-pr) + dy * np.cos(-pr)
-                        ref_vector_local = (rx, ry)
-                    if ref_vector_local:
-                        rx, ry = ref_vector_local
-                        if pw > ph:
-                            reverse_state = True if rx < 0 else False
-                        else:
-                            reverse_state = True if ry < 0 else False
-                    else:
-                        reverse_state = False
+                masks_to_show = []
+                for i, sub_box in enumerate(sub_boxes):
+                    has_pill, mask = check_pill_in_split_box(split_result_img, sub_box, HSV_LOWER, HSV_UPPER)
+                    resized_mask = cv2.resize(mask, (100, 100))
+                    masks_to_show.append(resized_mask)
 
-                    w, h = box[2], box[3]
-                    split_axis = "w" if w > h else "h"
-                    sub_boxes = split_obb(box, split_axis, num_splits=4, reverse=reverse_state)
+                    color = (0, 255, 0) if has_pill else (0, 0, 255)
+                    label = "Full" if has_pill else "Empty"
+                    split_result_img = draw_target_obb(split_result_img, [sub_box], (0, 255, 0), thickness=1)
+                    cv2.putText(split_result_img, f"#{i}:{label}",
+                                (int(sub_box[0]-15), int(sub_box[1])),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1)
+                    if i == 3:
+                        cv2.putText(split_result_img, "TAIL", (int(sub_box[0]), int(sub_box[1]-20)), 
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 2)
 
-                    masks_to_show = []
-                    for i, sub_box in enumerate(sub_boxes):
-                        has_pill, mask = check_pill_in_split_box(split_result_img, sub_box, HSV_LOWER, HSV_UPPER)
-                        resized_mask = cv2.resize(mask, (100, 100))
-                        masks_to_show.append(resized_mask)
-
-                        color = (0, 255, 0) if has_pill else (0, 0, 255)
-                        label = "Full" if has_pill else "Empty"
-                        split_result_img = draw_target_obb(split_result_img, sub_boxes, (0, 255, 0), thickness=1)
-                        cv2.putText(split_result_img, f"#{i}:{label}",
-                                    (int(sub_box[0]-15), int(sub_box[1])),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1)
-                        if i == 3:
-                            cv2.putText(split_result_img, "TAIL", (int(sub_box[0]), int(sub_box[1]-20)), 
-                                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 2)
-
-                    if len(masks_to_show) >= 4:
-                        all_masks = cv2.hconcat(masks_to_show)
-                        cv2.imshow("every HSV mask", all_masks)
+                if len(masks_to_show) >= 4:
+                    all_masks = cv2.hconcat(masks_to_show)
+                    cv2.imshow("every HSV mask", all_masks)
 
                 cv2.imshow("split", split_result_img)
             else:
