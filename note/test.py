@@ -1,5 +1,3 @@
-import time
-import os
 import numpy as np
 import cv2
 from ultralytics import YOLO
@@ -27,7 +25,7 @@ def get_target_obb(results, target_cls):
         # 將篩選出的框加入 filtered_boxes
         for box in target_boxes:
             filtered_boxes.append(box.numpy()) #.astype(np.int32)
-        
+            
     return filtered_boxes
 
 # 定義函數，用於在影像上繪製 OBB 框
@@ -78,22 +76,25 @@ def split_obb(obb_xywhr, axis='w', num_splits=4):
 
 # 定義函數，用於在指定子塊中檢測是否含有藥丸
 def check_pill_in_split_box(frame, box, hsv_lower, hsv_upper, threshold=0.1):
-    xc, yc, w, h, r = box
+    xc, xy, w, h, r = box
 
     # 建立旋轉矩陣
-    M = cv2.getRotationMatrix2D((xc, yc), np.degrees(r), 1)
+    M = cv2.getRotationMatrix2D((xc, xy), np.degrees(r), 1)
     # 進行仿射變換
     rotated = cv2.warpAffine(frame, M, (frame.shape[1], frame.shape[0]))
     # 裁切指定區域
-    crop = cv2.getRectSubPix(rotated, (int(w), int(h)), (xc, yc))
+    crop = cv2.getRectSubPix(rotated, (int(w), int(h)), (xc, xy))
 
     if (crop is None) or (crop.size == 0):
         return False, np.zeros((10, 10), dtype=np.uint8)
-    
+
     # 將裁切區域轉換為 HSV 顏色空間
     hsv_img = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
     # 進行顏色篩選
     mask = cv2.inRange(hsv_img, hsv_lower, hsv_upper)
+
+    # kernel = np.ones((3, 3), np.uint8)
+    # mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
 
     # 計算篩選出的白色像素點數量
     white_pixels = cv2.countNonZero(mask)
@@ -109,7 +110,7 @@ def check_pill_in_split_box(frame, box, hsv_lower, hsv_upper, threshold=0.1):
 def put_label_on_green_bg(frame, results, annotated_frame):
     # 1. 建立純綠色背景影像
     green_bg = np.zeros_like(frame)
-    green_bg[:] = (255, 0, 0) # BGR 格式
+    green_bg[:] = (0, 255, 0) # BGR 格式
     
     # 定義標籤類別名稱（確保與全域一致）
     label_names = ["bedtime_Word", "lid_close", "lid_hinge", "lid_open", "pill_box"]
@@ -149,6 +150,19 @@ def put_label_on_green_bg(frame, results, annotated_frame):
     
     return green_bg
 
+def empty(v):
+    pass
+
+# 建立控制面板
+cv2.namedWindow('trackbar')
+cv2.resizeWindow('trackbar', 500, 300)
+cv2.createTrackbar('Hue_Min', 'trackbar', 0, 179, empty)
+cv2.createTrackbar('Hue_Max', 'trackbar', 179, 179, empty)
+cv2.createTrackbar('Sat_Min', 'trackbar', 0, 255, empty)
+cv2.createTrackbar('Sat_Max', 'trackbar', 255, 255, empty)
+cv2.createTrackbar('Val_Min', 'trackbar', 0, 255, empty)
+cv2.createTrackbar('Val_Max', 'trackbar', 255, 255, empty)
+
 # 載入 YOLO 模型
 model = YOLO("best.pt", task="obb") #best.float32.tflite, best.onnx
 # 開啟網路攝影機
@@ -158,8 +172,8 @@ cap = cv2.VideoCapture(1)
 # HSV_LOWER = np.array([0, 20, 150])
 # HSV_UPPER = np.array([179, 242, 233])
 
-HSV_LOWER = np.array([0, 0, 255])
-HSV_UPPER = np.array([140, 255, 255])
+HSV_LOWER = np.array([0, 0, 0])
+HSV_UPPER = np.array([179, 255, 255])
 
 # 類別名稱
 name = ["bedtime_Word", "lid_close", "lid_hinge", "lid_open", "pill_box"]
@@ -171,7 +185,7 @@ while cap.isOpened():
         break
     else:
         # 縮放影像
-        frame = cv2.resize(frame, (0, 0), fx=0.7, fy=0.7)
+        frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
         # 進行偵測
         results = model(frame)
         # 在影像上標註偵測結果
@@ -229,6 +243,62 @@ while cap.isOpened():
         # 將偵測到的標籤放置在綠色背景上
         green_bg = put_label_on_green_bg(frame, results, frame)
         cv2.imshow("Labels on Green BG", green_bg)
+
+        
+
+        kernel = np.ones((3, 3), np.uint8)
+
+        # 讀取軌跡條數值
+        h_min = cv2.getTrackbarPos('Hue_Min', 'trackbar')
+        h_max = cv2.getTrackbarPos('Hue_Max', 'trackbar')
+        s_min = cv2.getTrackbarPos('Sat_Min', 'trackbar')
+        s_max = cv2.getTrackbarPos('Sat_Max', 'trackbar')
+        v_min = cv2.getTrackbarPos('Val_Min', 'trackbar')
+        v_max = cv2.getTrackbarPos('Val_Max', 'trackbar')
+        lower = np.array([h_min, s_min, v_min])
+        upper = np.array([h_max, s_max, v_max])
+
+        # --- 1. 原始影像處理 ---
+        hsv_raw = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        mask_raw = cv2.inRange(hsv_raw, lower, upper)
+        mask_raw = cv2.morphologyEx(mask_raw, cv2.MORPH_CLOSE, kernel)
+        res_raw = cv2.bitwise_and(frame, frame, mask=mask_raw)
+
+        # --- 2. HE (Histogram Equalization) 處理 ---
+        hsv_he = hsv_raw.copy()
+        # 僅針對 V 頻道做均衡化
+        hsv_he[:, :, 2] = cv2.equalizeHist(hsv_he[:, :, 2])
+        mask_he = cv2.inRange(hsv_he, lower, upper)
+        mask_he = cv2.morphologyEx(mask_he, cv2.MORPH_CLOSE, kernel)
+        # 轉回 BGR 以便顯示正常的彩色結果
+        img_he = cv2.cvtColor(hsv_he, cv2.COLOR_HSV2BGR)
+        res_he = cv2.bitwise_and(img_he, img_he, mask=mask_he)
+
+        # 將 HE 處理後的影像放置在綠色背景上
+        green_bg_he = put_label_on_green_bg(img_he, results, img_he)
+
+        # --- 3. CLAHE 處理 ---
+        hsv_clahe = hsv_raw.copy()
+        clahe_obj = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        hsv_clahe[:, :, 2] = clahe_obj.apply(hsv_clahe[:, :, 2])
+        mask_clahe = cv2.inRange(hsv_clahe, lower, upper)
+        mask_clahe = cv2.morphologyEx(mask_clahe, cv2.MORPH_CLOSE, kernel)
+        img_clahe = cv2.cvtColor(hsv_clahe, cv2.COLOR_HSV2BGR)
+        res_clahe = cv2.bitwise_and(img_clahe, img_clahe, mask=mask_clahe)
+
+        # 將 CLAHE 處理後的影像放置在綠色背景上
+        green_bg_clahe = put_label_on_green_bg(img_clahe, results, img_clahe)
+
+        # --- 視窗整合與顯示 ---
+        # 將原始、HE (綠幕)、CLAHE (綠幕) 的結果橫向拼接 (方便對照)
+        top_row = np.hstack((frame, green_bg_he, green_bg_clahe))
+        mid_row = cv2.cvtColor(np.hstack((mask_raw, mask_he, mask_clahe)), cv2.COLOR_GRAY2BGR)
+        bot_row = np.hstack((res_raw, res_he, res_clahe))
+        
+        # 堆疊三列
+        combined = np.vstack((top_row, mid_row, bot_row))
+        
+        cv2.imshow('Comparison (Left:Raw | Mid:HE (Green BG) | Right:CLAHE (Green BG))', combined)
 
         key = cv2.waitKey(1) & 0xFF
         # 按下 q 或 Q 離開
