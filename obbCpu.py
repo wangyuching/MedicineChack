@@ -74,7 +74,11 @@ def check_pill_in_split_box(frame, box, hsv_lower, hsv_upper, threshold=0.06):
     # rect = ((xc, yc), (w, h), np.degrees(r))
     M = cv2.getRotationMatrix2D((xc, yc), np.degrees(r), 1)
     rotated = cv2.warpAffine(frame, M, (frame.shape[1], frame.shape[0]))
-    crop = cv2.getRectSubPix(rotated, (int(w), int(h)), (xc, yc))
+    base_crop = cv2.getRectSubPix(rotated, (int(w), int(h)), (xc, yc))
+    h_crop, w_crop = base_crop.shape[:2]
+    pad_w = int(w_crop * 0.1)
+    pad_h = int(h_crop * 0.1)
+    crop = base_crop[pad_h:-pad_h, pad_w:-pad_w] # 去除邊緣 10% 的區域
 
     if (crop is None) or (crop.size == 0):
         return False, np.zeros((10, 10), dtype=np.uint8)
