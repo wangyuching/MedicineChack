@@ -45,10 +45,10 @@ def pillbox_head_tail(pill_box, bedtime_word=None, lid_hinges=None):
     px, py, pw, ph, pr = pill_box
 
     if bedtime_word:
-        hinge_sort = sorted(lid_hinges, key=lambda x: x[1])
         ref_x, ref_y = bedtime_word[0][0], bedtime_word[0][1]
     elif lid_hinges:
-        ref_x, ref_y = lid_hinges[0][0], lid_hinges[0][1]
+        hinge_sort = sorted(lid_hinges, key=lambda x: x[1])
+        ref_x, ref_y = hinge_sort[0][0], hinge_sort[0][1]
     else:
         return False
     
