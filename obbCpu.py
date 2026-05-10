@@ -24,7 +24,7 @@ def get_target_obb(results, target_cls):
         for box in target_boxes:
             filtered_boxes.append(box.numpy()) #.astype(np.int32)
             
-        return filtered_boxes
+    return filtered_boxes
 
 def draw_target_obb(image, boxes, color, thickness=2):
     output_img = image.copy()
@@ -70,8 +70,6 @@ def split_obb(obb_xywhr, axis='w', num_splits=4):
 
 def check_pill_in_split_box(frame, box, hsv_lower, hsv_upper, threshold=0.06):
     xc, yc, w, h, r = box
-
-    # rect = ((xc, yc), (w, h), np.degrees(r))
     M = cv2.getRotationMatrix2D((xc, yc), np.degrees(r), 1)
     rotated = cv2.warpAffine(frame, M, (frame.shape[1], frame.shape[0]))
     base_crop = cv2.getRectSubPix(rotated, (int(w), int(h)), (xc, yc))
