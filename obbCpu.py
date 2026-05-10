@@ -105,61 +105,13 @@ def check_pill_in_split_box(frame, box, hsv_lower, hsv_upper, threshold=0.1):
 
     return has_pill, mask
 
-# 定義函數，用於將偵測到的標籤放置在綠色背景上
-def put_label_on_green_bg(frame, results, annotated_frame):
-    # 1. 建立純綠色背景影像
-    green_bg = np.zeros_like(frame)
-    green_bg[:] = (255, 0, 0) # BGR 格式
-    
-    # 定義標籤類別名稱（確保與全域一致）
-    label_names = ["bedtime_Word", "lid_close", "lid_hinge", "lid_open", "pill_box"]
-    # 我們想要過濾並顯示在綠色背景上的索引
-    target_indices = [0, 1, 2, 3, 4] 
-    
-    for r in results:
-        classes = r.obb.cls.cpu().numpy()
-        boxes = r.obb.xywhr.cpu().numpy()
-        
-        for i, cls_idx in enumerate(classes):
-            if int(cls_idx) in target_indices:
-                # 取得該物件的 OBB 資訊
-                xc, yc, w, h, angle_rad = boxes[i]
-                
-                # 重要修正：確保所有數值都是標準 float，避免 NumPy 2.0 警告或 OpenCV 報錯
-                rect = ((float(xc), float(yc)), (float(w), float(h)), float(np.degrees(angle_rad)))
-                
-                # 取得四個頂點
-                points = cv2.boxPoints(rect)
-                points = np.int32(points)
-                
-                # 2. 建立一個黑底白色的遮罩 (Mask)
-                mask = np.zeros(frame.shape[:2], dtype=np.uint8)
-                cv2.fillPoly(mask, [points], 255)
-                
-                # 3. 將偵測到的物件區域從 annotated_frame 挖出來
-                # 使用遮罩將該區域的影像提取出來
-                fg_part = cv2.bitwise_and(annotated_frame, annotated_frame, mask=mask)
-                
-                # 4. 將綠色背景在該區域「挖空」
-                bg_mask = cv2.bitwise_not(mask)
-                green_part = cv2.bitwise_and(green_bg, green_bg, mask=bg_mask)
-                
-                # 5. 合併前景物件與綠色背景
-                green_bg = cv2.add(green_part, fg_part)
-    
-    return green_bg
-
 # 載入 YOLO 模型
 model = YOLO("best.pt", task="obb") #best.float32.tflite, best.onnx
 # 開啟網路攝影機
 cap = cv2.VideoCapture(1)
 
-# 定義藥丸顏色 HSV 範圍
-# HSV_LOWER = np.array([0, 20, 150])
-# HSV_UPPER = np.array([179, 242, 233])
-
 HSV_LOWER = np.array([0, 0, 255])
-HSV_UPPER = np.array([140, 255, 255])
+HSV_UPPER = np.array([179, 255, 255])
 
 # 類別名稱
 name = ["bedtime_Word", "lid_close", "lid_hinge", "lid_open", "pill_box"]
@@ -226,10 +178,6 @@ while cap.isOpened():
         # 顯示標註偵測結果的影像
         cv2.imshow("YOLO26 OBB Streaming", annotated_frame)
         
-        # 將偵測到的標籤放置在綠色背景上
-        green_bg = put_label_on_green_bg(frame, results, frame)
-        cv2.imshow("Labels on Green BG", green_bg)
-
         key = cv2.waitKey(1) & 0xFF
         # 按下 q 或 Q 離開
         if key == ord("q") or key == ord("Q"):

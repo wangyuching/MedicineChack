@@ -75,7 +75,7 @@ def split_obb(obb_xywhr, axis='w', num_splits=4):
     return sub_obbs
 
 # 定義函數，用於在指定子塊中檢測是否含有藥丸
-def check_pill_in_split_box(frame, box, hsv_lower, hsv_upper, threshold=0.1):
+def check_pill_in_split_box(frame, box, hsv_lower, hsv_upper, threshold=0.06):
     xc, xy, w, h, r = box
 
     # 建立旋轉矩陣
@@ -93,8 +93,8 @@ def check_pill_in_split_box(frame, box, hsv_lower, hsv_upper, threshold=0.1):
     # 進行顏色篩選
     mask = cv2.inRange(hsv_img, hsv_lower, hsv_upper)
 
-    # kernel = np.ones((3, 3), np.uint8)
-    # mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+    kernel = np.ones((3, 3), np.uint8)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
 
     # 計算篩選出的白色像素點數量
     white_pixels = cv2.countNonZero(mask)
@@ -105,50 +105,6 @@ def check_pill_in_split_box(frame, box, hsv_lower, hsv_upper, threshold=0.1):
     print(f"Box {i}: Pill Ratio = {ratio:.2%}")
 
     return has_pill, mask
-
-# 定義函數，用於將偵測到的標籤放置在綠色背景上
-def put_label_on_green_bg(frame, results, annotated_frame):
-    # 1. 建立純綠色背景影像
-    green_bg = np.zeros_like(frame)
-    green_bg[:] = (0, 255, 0) # BGR 格式
-    
-    # 定義標籤類別名稱（確保與全域一致）
-    label_names = ["bedtime_Word", "lid_close", "lid_hinge", "lid_open", "pill_box"]
-    # 我們想要過濾並顯示在綠色背景上的索引
-    target_indices = [0, 1, 2, 3, 4] 
-    
-    for r in results:
-        classes = r.obb.cls.cpu().numpy()
-        boxes = r.obb.xywhr.cpu().numpy()
-        
-        for i, cls_idx in enumerate(classes):
-            if int(cls_idx) in target_indices:
-                # 取得該物件的 OBB 資訊
-                xc, yc, w, h, angle_rad = boxes[i]
-                
-                # 重要修正：確保所有數值都是標準 float，避免 NumPy 2.0 警告或 OpenCV 報錯
-                rect = ((float(xc), float(yc)), (float(w), float(h)), float(np.degrees(angle_rad)))
-                
-                # 取得四個頂點
-                points = cv2.boxPoints(rect)
-                points = np.int32(points)
-                
-                # 2. 建立一個黑底白色的遮罩 (Mask)
-                mask = np.zeros(frame.shape[:2], dtype=np.uint8)
-                cv2.fillPoly(mask, [points], 255)
-                
-                # 3. 將偵測到的物件區域從 annotated_frame 挖出來
-                # 使用遮罩將該區域的影像提取出來
-                fg_part = cv2.bitwise_and(annotated_frame, annotated_frame, mask=mask)
-                
-                # 4. 將綠色背景在該區域「挖空」
-                bg_mask = cv2.bitwise_not(mask)
-                green_part = cv2.bitwise_and(green_bg, green_bg, mask=bg_mask)
-                
-                # 5. 合併前景物件與綠色背景
-                green_bg = cv2.add(green_part, fg_part)
-    
-    return green_bg
 
 def empty(v):
     pass
@@ -172,7 +128,7 @@ cap = cv2.VideoCapture(1)
 # HSV_LOWER = np.array([0, 20, 150])
 # HSV_UPPER = np.array([179, 242, 233])
 
-HSV_LOWER = np.array([0, 0, 0])
+HSV_LOWER = np.array([0, 0, 255])
 HSV_UPPER = np.array([179, 255, 255])
 
 # 類別名稱
@@ -240,12 +196,6 @@ while cap.isOpened():
         # 顯示標註偵測結果的影像
         cv2.imshow("YOLO26 OBB Streaming", annotated_frame)
         
-        # 將偵測到的標籤放置在綠色背景上
-        green_bg = put_label_on_green_bg(frame, results, frame)
-        cv2.imshow("Labels on Green BG", green_bg)
-
-        
-
         kernel = np.ones((3, 3), np.uint8)
 
         # 讀取軌跡條數值
@@ -274,9 +224,6 @@ while cap.isOpened():
         img_he = cv2.cvtColor(hsv_he, cv2.COLOR_HSV2BGR)
         res_he = cv2.bitwise_and(img_he, img_he, mask=mask_he)
 
-        # 將 HE 處理後的影像放置在綠色背景上
-        green_bg_he = put_label_on_green_bg(img_he, results, img_he)
-
         # --- 3. CLAHE 處理 ---
         hsv_clahe = hsv_raw.copy()
         clahe_obj = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
@@ -286,12 +233,9 @@ while cap.isOpened():
         img_clahe = cv2.cvtColor(hsv_clahe, cv2.COLOR_HSV2BGR)
         res_clahe = cv2.bitwise_and(img_clahe, img_clahe, mask=mask_clahe)
 
-        # 將 CLAHE 處理後的影像放置在綠色背景上
-        green_bg_clahe = put_label_on_green_bg(img_clahe, results, img_clahe)
-
         # --- 視窗整合與顯示 ---
         # 將原始、HE (綠幕)、CLAHE (綠幕) 的結果橫向拼接 (方便對照)
-        top_row = np.hstack((frame, green_bg_he, green_bg_clahe))
+        top_row = np.hstack((frame, img_he, img_clahe))
         mid_row = cv2.cvtColor(np.hstack((mask_raw, mask_he, mask_clahe)), cv2.COLOR_GRAY2BGR)
         bot_row = np.hstack((res_raw, res_he, res_clahe))
         
