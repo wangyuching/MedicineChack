@@ -167,7 +167,7 @@ while cap.isOpened():
 
                     w, h = box[2], box[3]
                     split_axis = "w" if w > h else "h"
-                    sub_boxes = split_obb(box, split_axis, num_splits=4, reverse=current_reverse)
+                    sub_boxes = split_obb(box, split_axis, num_splits=4, reverse=stable_reverse)
 
                     masks_to_show = []
                     for i, sub_box in enumerate(sub_boxes):
