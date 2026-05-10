@@ -4,7 +4,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 # read image
-img = cv2.imread('Einstein.jpg')
+img = cv2.imread('./image/original.png')
 
 # convert the image into grayscale before doing histogram equalization
 gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)

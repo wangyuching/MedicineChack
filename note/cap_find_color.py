@@ -26,6 +26,17 @@ while cap.isOpened():
     img_kernel = img.copy()
 
 
+    # convert the image into grayscale before doing histogram equalization
+    gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    # image equalization
+    equalize_img = cv2.equalizeHist(gray_img)
+
+    # create clahe image
+    clahe = cv2.createCLAHE()
+    clahe_img = clahe.apply(gray_img)
+
+
     # hsv:色調、飽和度、亮度
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     h_min = cv2.getTrackbarPos('Hue_Min', 'trackbar')
@@ -57,6 +68,10 @@ while cap.isOpened():
     cv2.imshow('open_results', open_results)
     cv2.imshow('close_kernel', close_kernel)
     cv2.imshow('close_results', close_results)
+    
+    cv2.imshow("gray", gray_img)
+    cv2.imshow("equal_image", equalize_img)
+    cv2.imshow("clahe_image", clahe_img)
 
 
     key = cv2.waitKey(1) & 0xFF
