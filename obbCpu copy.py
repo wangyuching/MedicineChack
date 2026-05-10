@@ -125,6 +125,9 @@ cap = cv2.VideoCapture(1)
 HSV_LOWER = np.array([0, 0, 255])
 HSV_UPPER = np.array([179, 255, 255])
 
+reverse_state = False
+has_once_detect_bedtime_word = False
+
 while cap.isOpened():
     ok, frame = cap.read()
     if (not ok) | (frame is None):    
@@ -142,12 +145,19 @@ while cap.isOpened():
             lid_open = get_target_obb(results, target_cls=3)
             if (len(lid_close) + len(lid_open)) >= 4: 
                 split_result_img = frame.copy()
-                
                 for box in pill_boxes:
-                    should_reverse = pillbox_head_tail(bedtime_word, box)
+                    if bedtime_word:
+                        current_res = pillbox_head_tail(bedtime_word, box)
+                        reverse_state = current_res
+                        has_once_detect_bedtime_word = True
+                        print("Direction updated by bedtime_word.")
+                    elif has_once_detect_bedtime_word:
+                        pass
+                        print("Direction kept from last detection.")
+
                     w, h = box[2], box[3]
                     split_axis = "w" if w > h else "h"
-                    sub_boxes = split_obb(box, split_axis, num_splits=4, reverse=should_reverse)
+                    sub_boxes = split_obb(box, split_axis, num_splits=4, reverse=reverse_state)
 
                     masks_to_show = []
                     for i, sub_box in enumerate(sub_boxes):
