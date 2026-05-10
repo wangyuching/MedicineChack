@@ -85,10 +85,10 @@ def check_pill_in_split_box(frame, box, hsv_lower, hsv_upper, threshold=0.06):
     
 
     hsv_img = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
-    mask = cv2.inRange(hsv_img, hsv_lower, hsv_upper)
+    base_mask = cv2.inRange(hsv_img, hsv_lower, hsv_upper)
 
-    # kernel = np.ones((3, 3), np.uint8)
-    # mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+    kernel = np.ones((3, 3), np.uint8)
+    mask = cv2.morphologyEx(base_mask, cv2.MORPH_CLOSE, kernel)
 
     white_pixels = cv2.countNonZero(mask)
     total_pixels = w * h
@@ -102,8 +102,6 @@ def check_pill_in_split_box(frame, box, hsv_lower, hsv_upper, threshold=0.06):
 model = YOLO("best.pt", task="obb") #best.float32.tflite, best.onnx
 cap = cv2.VideoCapture(1)
 
-# HSV_LOWER = np.array([0, 20, 150])
-# HSV_UPPER = np.array([179, 242, 233])
 
 HSV_LOWER = np.array([0, 0, 255])
 HSV_UPPER = np.array([179, 255, 255])
