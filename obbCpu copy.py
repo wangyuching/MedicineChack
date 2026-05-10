@@ -41,23 +41,32 @@ def draw_target_obb(image, boxes, color, thickness=2):
 
     return output_img
 
-def pillbox_head_tail(bedtime_word, pill_box):
-    if not bedtime_word:
+def pillbox_head_tail(pill_box, bedtime_word=None, lid_hinges=None):
+    px, py, pw, ph, pr = pill_box
+
+    if bedtime_word:
+        hinge_sort = sorted(lid_hinges, key=lambda x: x[1])
+        ref_x, ref_y = bedtime_word[0][0], bedtime_word[0][1]
+    elif lid_hinges:
+        ref_x, ref_y = lid_hinges[0][0], lid_hinges[0][1]
+    else:
         return False
     
-    px, py, pw, ph, pr = pill_box
-    bx, by, bw, bh, br = bedtime_word[0]
-
     if pw > ph: #horizontal
         axis_vec = np.array([np.cos(pr), np.sin(pr)])
     else: #vertical
         axis_vec = np.array([-np.sin(pr), np.cos(pr)])
 
-    target_vec = np.array([bx - px, by - py])
-
+    target_vec = np.array([ref_x - px, ref_y - py])
     projection = np.dot(target_vec, axis_vec)
 
-    return True if projection < 0 else False
+    if abs(projection) < 1.0:
+        return getattr(pillbox_head_tail, "last_state", False)
+    
+    res = True if projection < 0 else False
+    pillbox_head_tail.last_state = res
+
+    return res
 
 def split_obb(obb_xywhr, axis='w', num_splits=4, reverse=False):
     xc, yc, w, h, r = obb_xywhr
@@ -121,9 +130,11 @@ def check_pill_in_split_box(frame, box, hsv_lower, hsv_upper, threshold=0.06):
 model = YOLO("best.pt", task="obb") #best.float32.tflite, best.onnx
 cap = cv2.VideoCapture(1)
 
-
 HSV_LOWER = np.array([0, 0, 255])
 HSV_UPPER = np.array([179, 255, 255])
+
+stable_reverse = False
+reverse_count = 0
 
 while cap.isOpened():
     ok, frame = cap.read()
@@ -136,6 +147,7 @@ while cap.isOpened():
         annotated_frame = results[0].plot()
 
         bedtime_word = get_target_obb(results, target_cls=0)
+        lid_hinges = get_target_obb(results, target_cls=2)
         pill_boxes = get_target_obb(results, target_cls=4)
         if pill_boxes:
             lid_close = get_target_obb(results, target_cls=1)
@@ -144,10 +156,18 @@ while cap.isOpened():
                 split_result_img = frame.copy()
                 
                 for box in pill_boxes:
-                    should_reverse = pillbox_head_tail(bedtime_word, box)
+                    current_reverse = pillbox_head_tail(box, bedtime_word, lid_hinges)
+                    if  current_reverse != stable_reverse:
+                        reverse_count += 1
+                        if reverse_count > 5:
+                            stable_reverse = current_reverse
+                            reverse_count = 0
+                    else:
+                        reverse_count = 0
+
                     w, h = box[2], box[3]
                     split_axis = "w" if w > h else "h"
-                    sub_boxes = split_obb(box, split_axis, num_splits=4, reverse=should_reverse)
+                    sub_boxes = split_obb(box, split_axis, num_splits=4, reverse=current_reverse)
 
                     masks_to_show = []
                     for i, sub_box in enumerate(sub_boxes):
