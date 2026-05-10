@@ -68,16 +68,17 @@ def split_obb(obb_xywhr, axis='w', num_splits=4):
         
     return sub_obbs
 
-def check_pill_in_split_box(frame, box, hsv_lower, hsv_upper, threshold=0.1):
-    xc, xy, w, h, r = box
+def check_pill_in_split_box(frame, box, hsv_lower, hsv_upper, threshold=0.06):
+    xc, yc, w, h, r = box
 
-    # rect = ((xc, xy), (w, h), np.degrees(r))
-    M = cv2.getRotationMatrix2D((xc, xy), np.degrees(r), 1)
+    # rect = ((xc, yc), (w, h), np.degrees(r))
+    M = cv2.getRotationMatrix2D((xc, yc), np.degrees(r), 1)
     rotated = cv2.warpAffine(frame, M, (frame.shape[1], frame.shape[0]))
-    crop = cv2.getRectSubPix(rotated, (int(w), int(h)), (xc, xy))
+    crop = cv2.getRectSubPix(rotated, (int(w), int(h)), (xc, yc))
 
     if (crop is None) or (crop.size == 0):
-        return False, np.zeros((10, 10), dtype=np.unit8)
+        return False, np.zeros((10, 10), dtype=np.uint8)
+    
 
     hsv_img = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
     mask = cv2.inRange(hsv_img, hsv_lower, hsv_upper)
@@ -100,7 +101,7 @@ cap = cv2.VideoCapture(1)
 # HSV_LOWER = np.array([0, 20, 150])
 # HSV_UPPER = np.array([179, 242, 233])
 
-HSV_LOWER = np.array([0, 22, 0])
+HSV_LOWER = np.array([0, 0, 255])
 HSV_UPPER = np.array([179, 255, 255])
 
 while cap.isOpened():
