@@ -8,7 +8,7 @@ def empty(v):
 
 current_folder = os.path.dirname(os.path.abspath(__file__))
 base_root = os.path.dirname(current_folder)
-img = cv2.imread(os.path.join(base_root,"image", "clahe.png"))
+img = cv2.imread(os.path.join(base_root,"image", "image.png"))
 img = cv2.resize(img, (0, 0), fx=0.7, fy=0.7)
 
 cv2.namedWindow('trackbar')

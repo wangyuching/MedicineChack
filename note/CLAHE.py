@@ -4,7 +4,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 # read image
-img = cv2.imread('./image/original.png')
+img = cv2.imread('./image/image.png')
 
 # convert the image into grayscale before doing histogram equalization
 gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
