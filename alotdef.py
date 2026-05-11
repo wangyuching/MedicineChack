@@ -12,10 +12,10 @@ def get_target_obb(results, target_cls):
         mask = (classes == target_cls)
         target_boxes = boxes[mask]
 
-        if len(target_boxes) > 0:
-            print(f"Class {target_cls} ({name[target_cls]}) has {len(target_boxes)} objects")
-        else:
-            print(f"There's no objects for Class {target_cls}")
+        # if len(target_boxes) > 0:
+        #     print(f"Class {target_cls} ({name[target_cls]}) has {len(target_boxes)} objects")
+        # else:
+        #     print(f"There's no objects for Class {target_cls}")
         
         for box in target_boxes:
             filtered_boxes.append(box.numpy()) #.astype(np.int32)
@@ -100,7 +100,7 @@ def pillbox_head_tail(bedtime_word, pill_box):
     return True if projection < 0 else False
 
 
-def check_pill_in_split_box(frame, i, box, hsv_lower, hsv_upper, threshold=0.06):
+def check_pill_in_split_box(frame, box, hsv_lower, hsv_upper, threshold=0.06):
     xc, yc, w, h, r = box
     M = cv2.getRotationMatrix2D((xc, yc), np.degrees(r), 1)
     rotated = cv2.warpAffine(frame, M, (frame.shape[1], frame.shape[0]))
@@ -125,7 +125,7 @@ def check_pill_in_split_box(frame, i, box, hsv_lower, hsv_upper, threshold=0.06)
     ratio = white_pixels / total_pixels
 
     has_pill = ratio> threshold
-    print(f"Box {i}: Pill Ratio = {ratio:.2%}")
+    # print(f"Box {i}: Pill Ratio = {ratio:.2%}")
 
     return has_pill, mask
 
@@ -135,13 +135,13 @@ def draw_slot_states(image, box, slot_idx, slot_data):
     pill_state = "Full" if slot_data['Has_pill'] else "Empty"
 
     if lid_state == "Open" and not slot_data["Has_pill"]:
-        color = (0, 0, 255)  # Red for open & empty
+        color = (0, 255, 0)  # Green for open & empty
     elif lid_state == "Open" and slot_data["Has_pill"]:
-        color = (0, 255, 0)  # Green for open & full
+        color = (0, 0, 255)  # Red for open & full
     elif lid_state == "Close":
         color = (255, 0, 0)  # Blue for closed lid
     else:
-        color = (200, 200, 200)  # Gray for missing lid
+        color = (100, 100, 100)  # Gray for missing lid
 
     rect = ((x, y), (w, h), np.degrees(r))
     points = cv2.boxPoints(rect)
@@ -150,8 +150,8 @@ def draw_slot_states(image, box, slot_idx, slot_data):
     cv2.polylines(image, [points], isClosed=True, color=color, thickness=2)
 
     label = f"#{slot_idx} {lid_state}"
-    cv2.putText(image, label, (int(x) - 40, int(y)), cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1)
+    cv2.putText(image, label, (int(x) - 30, int(y)), cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1)
 
     if lid_state == "Open":
         pill_label = f"{pill_state}"
-        cv2.putText(image, pill_label, (int(x) - 40, int(y) + 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1)
+        cv2.putText(image, pill_label, (int(x) - 30, int(y) + 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1)
