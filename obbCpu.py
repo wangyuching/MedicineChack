@@ -39,7 +39,7 @@ while cap.isOpened():
             for ls in lid_close: all_lids.append({'box': ls, 'state': 'Close'})
             for lo in lid_open: all_lids.append({'box': lo, 'state': 'Open'})
 
-            if len(all_lids) >= 4:#> 0: 
+            if len(all_lids) > 0: 
                 split_result_img = frame.copy()
                 for box in pill_boxes:
                     if bedtime_word:
@@ -61,14 +61,11 @@ while cap.isOpened():
                         if idx != -1:
                             slots_data[idx]['lid'] = lid['state']
 
-                    masks_to_show = []
                     for i, sub_box in enumerate(sub_boxes):
                         current_lid_state = slots_data[i]['lid']
                         if current_lid_state == "Open":
                             has_pill, mask = check_pill_in_split_box(split_result_img, i, sub_box, HSV_LOWER, HSV_UPPER)
                             slots_data[i]['Has_pill'] = has_pill
-                            resized_mask = cv2.resize(mask, (100, 100))
-                            masks_to_show.append(resized_mask)
                         else:
                             slots_data[i]['Has_pill'] = False                 
                         
@@ -77,11 +74,6 @@ while cap.isOpened():
                                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 2)
                         
                         draw_slot_states(split_result_img, sub_box, i, slots_data[i])
-
-
-                    if len(masks_to_show) > 0:
-                        all_masks = cv2.hconcat(masks_to_show)
-                        cv2.imshow("every HSV mask", all_masks)
                 cv2.imshow("split_result_img", split_result_img)
 
             else:

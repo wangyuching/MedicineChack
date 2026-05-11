@@ -130,7 +130,7 @@ def check_pill_in_split_box(frame, i, box, hsv_lower, hsv_upper, threshold=0.06)
     return has_pill, mask
 
 def draw_slot_states(image, box, slot_idx, slot_data):
-    x, y = int(box[0]), int(box[1])
+    x, y,w, h, r = box
     lid_state = slot_data['lid']
     pill_state = "Full" if slot_data['Has_pill'] else "Empty"
 
@@ -138,11 +138,20 @@ def draw_slot_states(image, box, slot_idx, slot_data):
         color = (0, 0, 255)  # Red for open & empty
     elif lid_state == "Open" and slot_data["Has_pill"]:
         color = (0, 255, 0)  # Green for open & full
+    elif lid_state == "Close":
+        color = (255, 0, 0)  # Blue for closed lid
     else:
-        color = (255, 255, 0)  # Cyan for closed/missing
+        color = (200, 200, 200)  # Gray for missing lid
+
+    rect = ((x, y), (w, h), np.degrees(r))
+    points = cv2.boxPoints(rect)
+    points = np.int32(points)
+        
+    cv2.polylines(image, [points], isClosed=True, color=color, thickness=2)
 
     label = f"#{slot_idx} {lid_state}"
+    cv2.putText(image, label, (int(x) - 40, int(y)), cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1)
+
     if lid_state == "Open":
-        label += f" & {pill_state}"
-    
-    cv2.putText(image, label, (x - 40, y), cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1)
+        pill_label = f"{pill_state}"
+        cv2.putText(image, pill_label, (int(x) - 40, int(y) + 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1)
