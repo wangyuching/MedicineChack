@@ -37,24 +37,6 @@ def draw_target_obb(image, boxes, color, thickness=2):
 
     return output_img
 
-def pillbox_head_tail(bedtime_word, pill_box):
-    if not bedtime_word:
-        return False
-    
-    px, py, pw, ph, pr = pill_box
-    bx, by, bw, bh, br = bedtime_word[0]
-
-    if pw > ph: #horizontal
-        axis_vec = np.array([np.cos(pr), np.sin(pr)])
-    else: #vertical
-        axis_vec = np.array([-np.sin(pr), np.cos(pr)])
-
-    target_vec = np.array([bx - px, by - py])
-
-    projection = np.dot(target_vec, axis_vec)
-
-    return True if projection < 0 else False
-
 def split_obb(obb_xywhr, axis='w', num_splits=4, reverse=False):
     xc, yc, w, h, r = obb_xywhr
     
@@ -85,6 +67,39 @@ def split_obb(obb_xywhr, axis='w', num_splits=4, reverse=False):
         
     return sub_obbs
 
+def lid_connect_split_box(lid_box, sub_boxes):
+    lx, ly = lid_box[0], lid_box[1]
+    min_dist = float('inf')
+    best_idx = -1
+
+    for idx, s_box in enumerate(sub_boxes):
+        sx, sy = s_box[0], s_box[1]
+        dist = np.sqrt((lx - sx)**2 + (ly - sy)**2)
+        if dist < min_dist:
+            min_dist = dist
+            best_idx = idx
+
+    return best_idx
+
+def pillbox_head_tail(bedtime_word, pill_box):
+    if not bedtime_word:
+        return False
+    
+    px, py, pw, ph, pr = pill_box
+    bx, by, bw, bh, br = bedtime_word[0]
+
+    if pw > ph: #horizontal
+        axis_vec = np.array([np.cos(pr), np.sin(pr)])
+    else: #vertical
+        axis_vec = np.array([-np.sin(pr), np.cos(pr)])
+
+    target_vec = np.array([bx - px, by - py])
+
+    projection = np.dot(target_vec, axis_vec)
+
+    return True if projection < 0 else False
+
+
 def check_pill_in_split_box(frame, i, box, hsv_lower, hsv_upper, threshold=0.06):
     xc, yc, w, h, r = box
     M = cv2.getRotationMatrix2D((xc, yc), np.degrees(r), 1)
@@ -113,3 +128,21 @@ def check_pill_in_split_box(frame, i, box, hsv_lower, hsv_upper, threshold=0.06)
     print(f"Box {i}: Pill Ratio = {ratio:.2%}")
 
     return has_pill, mask
+
+def draw_slot_states(image, box, slot_idx, slot_data):
+    x, y = int(box[0]), int(box[1])
+    lid_state = slot_data['lid']
+    pill_state = "Full" if slot_data['Has_pill'] else "Empty"
+
+    if lid_state == "Open" and not slot_data["Has_pill"]:
+        color = (0, 0, 255)  # Red for open & empty
+    elif lid_state == "Open" and slot_data["Has_pill"]:
+        color = (0, 255, 0)  # Green for open & full
+    else:
+        color = (255, 255, 0)  # Cyan for closed/missing
+
+    label = f"#{slot_idx} {lid_state}"
+    if lid_state == "Open":
+        label += f" & {pill_state}"
+    
+    cv2.putText(image, label, (x - 40, y), cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1)
