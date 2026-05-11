@@ -150,8 +150,8 @@ def draw_slot_states(image, box, slot_idx, slot_data):
     cv2.polylines(image, [points], isClosed=True, color=color, thickness=2)
 
     label = f"#{slot_idx} {lid_state}"
-    cv2.putText(image, label, (int(x) - 30, int(y)), cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1)
+    cv2.putText(image, label, (int(x) - 30, int(y)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
 
     if lid_state == "Open":
         pill_label = f"{pill_state}"
-        cv2.putText(image, pill_label, (int(x) - 30, int(y) + 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1)
+        cv2.putText(image, pill_label, (int(x) - 30, int(y) + 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
