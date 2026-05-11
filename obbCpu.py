@@ -67,7 +67,7 @@ while cap.isOpened():
                     for i, sub_box in enumerate(sub_boxes):
                         current_lid_state = slots_data[i]['lid']
                         if current_lid_state == "Open":
-                            has_pill, mask = check_pill_in_split_box(pill_detect_frame, sub_box, HSV_LOWER, HSV_UPPER)
+                            has_pill, mask = check_pill_in_split_box(pill_detect_frame, i, sub_box, HSV_LOWER, HSV_UPPER)
                             slots_data[i]['Has_pill'] = has_pill
                         else:
                             slots_data[i]['Has_pill'] = False                 

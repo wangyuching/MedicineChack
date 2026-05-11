@@ -100,7 +100,7 @@ def pillbox_head_tail(bedtime_word, pill_box):
     return True if projection < 0 else False
 
 
-def check_pill_in_split_box(frame, box, hsv_lower, hsv_upper, threshold=0.06):
+def check_pill_in_split_box(frame, i, box, hsv_lower, hsv_upper, threshold=0.06):
     xc, yc, w, h, r = box
     M = cv2.getRotationMatrix2D((xc, yc), np.degrees(r), 1)
     rotated = cv2.warpAffine(frame, M, (frame.shape[1], frame.shape[0]))
@@ -125,7 +125,7 @@ def check_pill_in_split_box(frame, box, hsv_lower, hsv_upper, threshold=0.06):
     ratio = white_pixels / total_pixels
 
     has_pill = ratio> threshold
-    # print(f"Box {i}: Pill Ratio = {ratio:.2%}")
+    print(f"Box {i}: Pill Ratio = {ratio:.2%}")
 
     return has_pill, mask
 
