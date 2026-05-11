@@ -1,126 +1,16 @@
-import time
 import os
-from matplotlib.pyplot import box
-import numpy as np
 import cv2
+import numpy as np
 from ultralytics import YOLO
-
-def get_target_obb(results, target_cls):
-    filtered_boxes = []
-    name = ["bedtime_Word", "lid_close", "lid_hinge", "lid_open", "pill_box"]
-
-    for r in results:
-        classes = r.obb.cls
-        boxes = r.obb.xywhr #[center_x, center_y, width, height, rotation_radians]
-
-        mask = (classes == target_cls)
-        target_boxes = boxes[mask]
-
-        if len(target_boxes) > 0:
-            print(f"Class {target_cls} ({name[target_cls]}) has {len(target_boxes)} objects")
-        else:
-            print(f"There's no objects for Class {target_cls}")
-        
-        for box in target_boxes:
-            filtered_boxes.append(box.numpy()) #.astype(np.int32)
-            
-    return filtered_boxes
-
-def draw_target_obb(image, boxes, color, thickness=2):
-    output_img = image.copy()
-    for box in boxes:
-        x, y, w, h, r = box
-
-        angle = np.degrees(r)
-        rect = ((x, y), (w, h), angle)
-
-        points = cv2.boxPoints(rect)
-        points = np.int32(points)
-    
-        cv2.polylines(output_img, [points], isClosed=True, color=color, thickness=thickness)
-
-    return output_img
-
-def pillbox_head_tail(bedtime_word, pill_box):
-    if not bedtime_word:
-        return False
-    
-    px, py, pw, ph, pr = pill_box
-    bx, by, bw, bh, br = bedtime_word[0]
-
-    if pw > ph: #horizontal
-        axis_vec = np.array([np.cos(pr), np.sin(pr)])
-    else: #vertical
-        axis_vec = np.array([-np.sin(pr), np.cos(pr)])
-
-    target_vec = np.array([bx - px, by - py])
-
-    projection = np.dot(target_vec, axis_vec)
-
-    return True if projection < 0 else False
-
-def split_obb(obb_xywhr, axis='w', num_splits=4, reverse=False):
-    xc, yc, w, h, r = obb_xywhr
-    
-    # 計算子塊的新尺寸
-    new_w = w / num_splits if axis == 'w' else w
-    new_h = h / num_splits if axis == 'h' else h
-    
-    sub_obbs = []
-    
-    # 計算每個子塊中心在局部坐標系下的偏移
-    # 例如 4 等分，比例為 -3/8, -1/8, 1/8, 3/8
-    steps = np.linspace(-0.5 + 1/(2*num_splits), 0.5 - 1/(2*num_splits), num_splits)
-
-    if reverse:
-        steps = steps[::-1]
-
-    for step in steps:
-        if axis == 'w':
-            dx, dy = step * w, 0
-        else:
-            dx, dy = 0, step * h
-            
-        # 旋轉矩陣變換
-        new_x = xc + dx * np.cos(r) - dy * np.sin(r)
-        new_y = yc + dx * np.sin(r) + dy * np.cos(r)
-        
-        sub_obbs.append([new_x, new_y, new_w, new_h, r])
-        
-    return sub_obbs
-
-def check_pill_in_split_box(frame, box, hsv_lower, hsv_upper, threshold=0.06):
-    xc, yc, w, h, r = box
-    M = cv2.getRotationMatrix2D((xc, yc), np.degrees(r), 1)
-    rotated = cv2.warpAffine(frame, M, (frame.shape[1], frame.shape[0]))
-    base_crop = cv2.getRectSubPix(rotated, (int(w), int(h)), (xc, yc))
-    h_crop, w_crop = base_crop.shape[:2]
-    pad_w = int(w_crop * 0.1)
-    pad_h = int(h_crop * 0.1)
-    crop = base_crop[pad_h:-pad_h, pad_w:-pad_w] # 去除邊緣 10% 的區域
-
-    if (crop is None) or (crop.size == 0):
-        return False, np.zeros((10, 10), dtype=np.uint8)
-    
-
-    hsv_img = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
-    base_mask = cv2.inRange(hsv_img, hsv_lower, hsv_upper)
-
-    kernel = np.ones((3, 3), np.uint8)
-    mask = cv2.morphologyEx(base_mask, cv2.MORPH_CLOSE, kernel)
-
-    white_pixels = cv2.countNonZero(mask)
-    total_pixels = w * h
-    ratio = white_pixels / total_pixels
-
-    has_pill = ratio> threshold
-    print(f"Box {i}: Pill Ratio = {ratio:.2%}")
-
-    return has_pill, mask
+from matplotlib.pyplot import box
+from alotdef import (get_target_obb, 
+                     draw_target_obb, 
+                     pillbox_head_tail, 
+                     split_obb, 
+                     check_pill_in_split_box)
 
 model = YOLO("best.pt", task="obb") #best.float32.tflite, best.onnx
 cap = cv2.VideoCapture(1)
-
 
 HSV_LOWER = np.array([0, 0, 255])
 HSV_UPPER = np.array([179, 255, 255])
@@ -161,7 +51,7 @@ while cap.isOpened():
 
                     masks_to_show = []
                     for i, sub_box in enumerate(sub_boxes):
-                        has_pill, mask = check_pill_in_split_box(split_result_img, sub_box, HSV_LOWER, HSV_UPPER)
+                        has_pill, mask = check_pill_in_split_box(split_result_img, i, sub_box, HSV_LOWER, HSV_UPPER)
                         resized_mask = cv2.resize(mask, (100, 100))
                         masks_to_show.append(resized_mask)
 
