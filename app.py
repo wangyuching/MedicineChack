@@ -43,7 +43,7 @@ def save_frame(frame, current_slots_data, tracker, duration, missing):
                     filename = f"saved_slots/{slots_str}_{timestamp}.png"
                     cv2.imwrite(filename, frame)
 
-                    db_manager.insert_pill_data(current_slots_data, frame)
+                    # db_manager.insert_pill_data(current_slots_data, frame)
                     tracker['triggered'] = True
     
     else:
