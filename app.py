@@ -34,6 +34,15 @@ def save_frame(frame, current_slots_data, tracker, duration, missing):
                 elapsed_time = t.time() - tracker['open_start_time']
 
                 if elapsed_time > duration:
+                    slot_details = []
+                    for idx in current_opens:
+                        pill_state = "Full" if current_slots_data[idx]['Has_pill'] else "Empty"
+                        slot_details.append(f"slot{idx}_{pill_state}")
+                    slots_str = "_".join(slot_details)
+                    timestamp = t.strftime("%Y%m%d_%H%M%S")
+                    filename = f"saved_slots/{slots_str}_{timestamp}.png"
+                    cv2.imwrite(filename, frame)
+
                     db_manager.insert_pill_data(current_slots_data, frame)
                     tracker['triggered'] = True
     
