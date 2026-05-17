@@ -10,3 +10,4 @@ use project;
 show tables;
 describe `pills`;
 SELECT * FROM `pills`;
+drop table `take_medicine`;

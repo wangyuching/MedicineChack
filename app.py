@@ -128,9 +128,9 @@ while cap.isOpened():
                         current_lid_state = slots_data[i]['lid']
                         if current_lid_state == "Open":
                             has_pill, mask = check_pill_in_split_box(pill_detect_frame, i, sub_box, HSV_LOWER, HSV_UPPER)
-                            slots_data[i]['Has_pill'] = has_pill
+                            slots_data[i]['Has_pill'] = "Full" if has_pill else "Empty"
                         else:
-                            slots_data[i]['Has_pill'] = False
+                            slots_data[i]['Has_pill'] = "Unknown"
                         
                         if i == 3:
                             cv2.putText(pill_detect_frame, "TAIL", (int(sub_box[0]), int(sub_box[1]-20)), 

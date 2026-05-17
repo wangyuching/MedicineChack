@@ -17,10 +17,10 @@ class Pill(db.Model):
     lid2 = db.Column(db.String(10), default="Unknown")
     lid3 = db.Column(db.String(10), default="Unknown")
 
-    has_pill0 = db.Column(db.Boolean, default="Unknown")
-    has_pill1 = db.Column(db.Boolean, default="Unknown")
-    has_pill2 = db.Column(db.Boolean, default="Unknown")
-    has_pill3 = db.Column(db.Boolean, default="Unknown")
+    has_pill0 = db.Column(db.String(10), default="Unknown")
+    has_pill1 = db.Column(db.String(10), default="Unknown")
+    has_pill2 = db.Column(db.String(10), default="Unknown")
+    has_pill3 = db.Column(db.String(10), default="Unknown")
 
     img = db.Column(db.LargeBinary(length=(2**24)-1), nullable=False)
 
