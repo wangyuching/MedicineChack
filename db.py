@@ -22,7 +22,7 @@ class Pill(db.Model):
     has_pill2 = db.Column(db.Boolean, default="Unknown")
     has_pill3 = db.Column(db.Boolean, default="Unknown")
 
-    img = db.Collumn(db.MediumBinary(Length=(2**24)-1), nullable=False)
+    img = db.Column(db.LargeBinary(length=(2**24)-1), nullable=False)
 
 class PillManager:
     def __init__(self):

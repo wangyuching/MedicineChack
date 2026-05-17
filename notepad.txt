@@ -1,3 +1,0 @@
-狀態統合： 建議使用 slots_status 這種字典結構。這樣在每一幀結束時，你可以輕鬆地將 slots_status 寫入資料庫或 JSON 檔案進行長期監控。
-
-例外處理： 在 find_nearest_box_index 中可以加入距離閥值（Threshold）。如果蓋子離格子太遠，則不判定為該格子的蓋子，避免誤判。

@@ -11,13 +11,14 @@ def get_target_obb(results, target_cls):
 
         mask = (classes == target_cls)
         target_boxes = boxes[mask]
+        target_boxes_np = target_boxes.cpu.numpy()
 
         # if len(target_boxes) > 0:
         #     print(f"Class {target_cls} ({name[target_cls]}) has {len(target_boxes)} objects")
         # else:
         #     print(f"There's no objects for Class {target_cls}")
         
-        for box in target_boxes:
+        for box in target_boxes_np:
             filtered_boxes.append(box.numpy()) #.astype(np.int32)
             
     return filtered_boxes
