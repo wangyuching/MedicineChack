@@ -1,8 +1,8 @@
 import os
 import cv2
+import time as t
 import numpy as np
 from ultralytics import YOLO
-from matplotlib.pyplot import box
 from alotdef import (get_target_obb, 
                      draw_target_obb, 
                      split_obb, 
@@ -10,6 +10,51 @@ from alotdef import (get_target_obb,
                      pillbox_head_tail, 
                      check_pill_in_split_box,
                      draw_slot_states)
+
+def save_frame(frame, current_slots_data, tracker, duration, missing):
+    current_opens = [
+        idx for idx, 
+        data in current_slots_data.items() 
+        if data['lid'] == "Open"
+    ]
+
+    if len(current_opens) > 0:
+        tracker['missing_start_time'] = None
+
+        if current_opens != tracker['active_opens']:
+            tracker['active_opens'] = current_opens
+            tracker['open_start_time'] = t.time()
+            tracker['triggered'] = False
+
+        else:
+            if tracker['open_start_time'] is not None and not tracker['triggered']:
+                elapsed_time = t.time() - tracker['open_start_time']
+
+                if elapsed_time > duration:
+                    slot_details = []
+                    for idx in current_opens:
+                        pill_state = "Full" if current_slots_data[idx]['Has_pill'] else "Empty"
+                        slot_details.append(f"slot{idx}_{pill_state}")
+
+                    slots_str = "_".join(slot_details)
+                    timestamp = t.strftime("%Y%m%d_%H%M%S")
+                    filename = f"saved_slots/{slots_str}_{timestamp}.png"
+                    cv2.imwrite(filename, frame)
+                    tracker['triggered'] = True
+    
+    else:
+        if tracker['open_start_time'] is not None:
+            if tracker['missing_start_time'] is None:
+                tracker['missing_start_time'] = t.time()
+
+            lost_duration = t.time() - tracker['missing_start_time']
+
+            if lost_duration > missing:
+                tracker['active_opens'] = []
+                tracker['open_start_time'] = None
+                tracker['missing_start_time'] = None
+                tracker['triggered'] = False
+            
 
 model = YOLO("best.pt", task="obb") #best.float32.tflite, best.onnx
 cap = cv2.VideoCapture(1)
@@ -19,6 +64,17 @@ HSV_UPPER = np.array([179, 255, 255])
 
 reverse_state = False
 has_once_detect_bedtime_word = False
+
+saved_slots = "saved_slots"
+if not os.path.exists(saved_slots):
+    os.makedirs(saved_slots)
+
+same_time_tracker = {
+    "active_opens":[],
+    "open_start_time": None,
+    "missing_start_time": None,
+    "triggered": False,
+}
 
 while cap.isOpened():
     ok, frame = cap.read()
@@ -70,13 +126,22 @@ while cap.isOpened():
                             has_pill, mask = check_pill_in_split_box(pill_detect_frame, i, sub_box, HSV_LOWER, HSV_UPPER)
                             slots_data[i]['Has_pill'] = has_pill
                         else:
-                            slots_data[i]['Has_pill'] = False                 
+                            slots_data[i]['Has_pill'] = False
                         
                         if i == 3:
                             cv2.putText(pill_detect_frame, "TAIL", (int(sub_box[0]), int(sub_box[1]-20)), 
                                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 2)
                         
                         draw_slot_states(pill_detect_frame, sub_box, i, slots_data[i])
+
+                    save_frame(
+                        frame=pill_detect_frame,
+                        current_slots_data=slots_data,
+                        tracker=same_time_tracker,
+                        duration=5.0,
+                        missing=5.0
+                    )
+
             else:
                 print("Cant find any lids.")
         else:
