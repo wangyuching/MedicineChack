@@ -40,10 +40,10 @@ def save_frame(frame, current_slots_data, tracker, duration, missing):
                         slot_details.append(f"slot{idx}_{pill_state}")
                     slots_str = "_".join(slot_details)
                     timestamp = t.strftime("%Y%m%d_%H%M%S")
-                    filename = f"saved_slots/{slots_str}_{timestamp}.png"
+                    filename = f"saved_slots/{timestamp}_{slots_str}.png"
                     cv2.imwrite(filename, frame)
 
-                    # db_manager.insert_pill_data(current_slots_data, frame)
+                    db_manager.insert_pill_data(current_slots_data, frame)
                     tracker['triggered'] = True
     
     else:
@@ -58,7 +58,6 @@ def save_frame(frame, current_slots_data, tracker, duration, missing):
                 tracker['open_start_time'] = None
                 tracker['missing_start_time'] = None
                 tracker['triggered'] = False
-            
 
 model = YOLO("best.pt", task="obb") #best.float32.tflite, best.onnx
 cap = cv2.VideoCapture(1)
@@ -128,9 +127,9 @@ while cap.isOpened():
                         current_lid_state = slots_data[i]['lid']
                         if current_lid_state == "Open":
                             has_pill, mask = check_pill_in_split_box(pill_detect_frame, i, sub_box, HSV_LOWER, HSV_UPPER)
-                            slots_data[i]['Has_pill'] = "Full" if has_pill else "Empty"
+                            slots_data[i]['Has_pill'] = has_pill
                         else:
-                            slots_data[i]['Has_pill'] = "Unknown"
+                            slots_data[i]['Has_pill'] = False
                         
                         if i == 3:
                             cv2.putText(pill_detect_frame, "TAIL", (int(sub_box[0]), int(sub_box[1]-20)), 

@@ -39,8 +39,11 @@ class PillManager:
         dt_str = t.strftime("%Y-%m-%d %H:%M:%S", t.localtime())
 
         lids = [current_slots_data[i]['lid'] for i in range(4)]
-        has_pills = [current_slots_data[i]['Has_pill'] for i in range(4)]
-        # has_pills = ["Full" if current_slots_data[i]['Has_pill'] else "Empty" for i in range(4)]
+        has_pills = [
+            "Unknown" if current_slots_data[i]['lid'] == "Close" else
+            ("Full" if current_slots_data[i]['Has_pill'] else "Empty")
+            for i in range(4)
+        ]
         _, buffer = cv2.imencode('.jpg', frame)
         img_data = buffer.tobytes()
 
