@@ -14,50 +14,70 @@ from alotdef import (get_target_obb,
 
 db_manager = PillManager()
 
-def save_frame(frame, current_slots_data, tracker, duration, missing):
-    current_opens = [
-        idx for idx, 
-        data in current_slots_data.items() 
-        if data['lid'] == "Open"
-    ]
+def save_frame(frame, current_slots_data, tracker, duration):
+    current_time = t.time()
+
+    if "last_states" not in tracker:
+        tracker["last_states"] = {i: {"lid": "Unknown", "Has_pill": False} for i in range(4)}
+        tracker["open_start_time"] = None
+        tracker["triggered_open"] = False
+        tracker["pending_close_slots"] = {}
+
+    current_opens = [idx for idx, data in current_slots_data.items() if data['lid'] == "Open"]
 
     if len(current_opens) > 0:
-        tracker['missing_start_time'] = None
+        if tracker["open_start_time"] is None:
+            tracker["open_start_time"] = current_time
+            tracker["triggered_open"] = False
 
-        if current_opens != tracker['active_opens']:
-            tracker['active_opens'] = current_opens
-            tracker['open_start_time'] = t.time()
-            tracker['triggered'] = False
-
-        else:
-            if tracker['open_start_time'] is not None and not tracker['triggered']:
-                elapsed_time = t.time() - tracker['open_start_time']
-
-                if elapsed_time > duration:
-                    slot_details = []
-                    for idx in current_opens:
-                        pill_state = "Full" if current_slots_data[idx]['Has_pill'] else "Empty"
-                        slot_details.append(f"slot{idx}_{pill_state}")
-                    slots_str = "_".join(slot_details)
-                    timestamp = t.strftime("%Y%m%d_%H%M%S")
-                    filename = f"saved_slots/{timestamp}_{slots_str}.png"
-                    cv2.imwrite(filename, frame)
-
-                    db_manager.insert_pill_data(current_slots_data, frame)
-                    tracker['triggered'] = True
-    
+        elif not tracker["triggered_open"]:
+            elapsed_open = current_time - tracker["open_start_time"]
+            if elapsed_open > duration:
+                timestamp = t.strftime("%Y%m%d_%H%M%S")
+                slot_details = [f"slot{i}_{'Full' if current_slots_data[i]['Has_pill'] else 'Empty'}" for i in current_opens]
+                filename = f"saved_slots/{timestamp}_open_{'_'.join(slot_details)}.jpg"
+                cv2.imwrite(filename, frame)
+                db_manager.insert_pill_data(current_slots_data, frame)
+                tracker["triggered_open"] = True
     else:
-        if tracker['open_start_time'] is not None:
-            if tracker['missing_start_time'] is None:
-                tracker['missing_start_time'] = t.time()
+        tracker["open_start_time"] = None
+        tracker["triggered_open"] = False
+    
+    triggered_close_events = False
 
-            lost_duration = t.time() - tracker['missing_start_time']
+    for i in range(4):
+        last_lid = tracker["last_states"][i]["lid"]
+        last_pill = tracker["last_states"][i]["Has_pill"]
+        current_lid = current_slots_data[i]["lid"]
 
-            if lost_duration > missing:
-                tracker['active_opens'] = []
-                tracker['open_start_time'] = None
-                tracker['missing_start_time'] = None
-                tracker['triggered'] = False
+        was_open_and_full = (last_lid == "Open" and last_pill is True)
+        now_close_or_missing = (current_lid in ["Close", "Missing"])
+
+        if was_open_and_full and now_close_or_missing:
+            if i not in tracker["pending_close_slots"]:
+                tracker["pending_close_slots"][i] = current_time
+
+        if current_lid == "Open" and (i in tracker["pending_close_slots"]):
+            del tracker["pending_close_slots"][i]
+        
+        if now_close_or_missing and (i in tracker["pending_close_slots"]):
+            elapsed_close = current_time - tracker["pending_close_slots"][i]
+            if elapsed_close > duration:
+                triggered_close_events = True
+                del tracker["pending_close_slots"][i]
+
+    if triggered_close_events:
+        timestamp = t.strftime("%Y%m%d_%H%M%S")
+        slot_details = [f"slot{i}_{'Full' if current_slots_data[i]['Has_pill'] else 'Empty'}" for i in range(4)]
+        filename = f"saved_slots/{timestamp}_close_{'_'.join(slot_details)}.jpg"
+        cv2.imwrite(filename, frame)
+        db_manager.insert_pill_data(current_slots_data, frame)
+
+    for i in range(4):
+        tracker["last_states"][i] = {
+            "lid": current_slots_data[i]["lid"], 
+            "Has_pill": current_slots_data[i]["Has_pill"]
+        }
 
 model = YOLO("best.pt", task="obb") #best.float32.tflite, best.onnx
 cap = cv2.VideoCapture(1)
@@ -72,12 +92,7 @@ saved_slots = "saved_slots"
 if not os.path.exists(saved_slots):
     os.makedirs(saved_slots)
 
-same_time_tracker = {
-    "active_opens":[],
-    "open_start_time": None,
-    "missing_start_time": None,
-    "triggered": False,
-}
+pill_tracker = {}
 
 while cap.isOpened():
     ok, frame = cap.read()
@@ -140,9 +155,8 @@ while cap.isOpened():
                     save_frame(
                         frame=pill_detect_frame,
                         current_slots_data=slots_data,
-                        tracker=same_time_tracker,
+                        tracker=pill_tracker,
                         duration=5.0,
-                        missing=5.0
                     )
 
             else:
