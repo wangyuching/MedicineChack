@@ -3,6 +3,8 @@ from ultralytics import YOLO
 import cv2
 import time as t
 import numpy as np
+from flask import Flask, render_template, Response, jsonify
+import base64
 
 from alotdef import (get_target_obb, 
                      draw_target_obb, 
@@ -11,7 +13,9 @@ from alotdef import (get_target_obb,
                      pillbox_head_tail, 
                      check_pill_in_split_box,
                      draw_slot_states)
-from db import save_frame
+from db import Pill, save_frame
+
+app = Flask(__name__)
 
 model = YOLO("best.pt", task="obb") #best.float32.tflite, best.onnx
 cap = cv2.VideoCapture(1)
@@ -47,6 +51,7 @@ def cap_real_time():
             annotated_frame = cv2.resize(annotated_frame, (640, 480))
 
             pill_detect_frame = frame.copy()
+            pill_detect_frame = cv2.resize(pill_detect_frame, (640, 480))
 
             bedtime_word = get_target_obb(results, target_cls=0)
             pill_boxes = get_target_obb(results, target_cls=4)
@@ -104,13 +109,25 @@ def cap_real_time():
 
             combined_frame = np.hstack((frame, annotated_frame, pill_detect_frame))
             final_view = cv2.resize(combined_frame, (0, 0), fx=0.7, fy=0.7)
-            cv2.imshow("YOLO26 OBB Streaming", final_view)
 
-            key = cv2.waitKey(1) & 0xFF
-            if key == ord("q") or key == ord("Q"):
-                break
-            elif key == ord("p") or key == ord("P"):
-                cv2.waitKey()
+            ret, jpeg = cv2.imencode('.jpg', pill_detect_frame)
+            pill_detect_frame = jpeg.tobytes()
+            yield(
+                b'--pill_detect_frame\r\n'
+                b'Content-Type: image/jpeg\r\n\r\n' + pill_detect_frame + b'\r\n'
+            )
 
     cap.release()
 
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+
+
+@app.route('/cap_in_html')
+def cap_in_html():
+    return Response(cap_real_time(), mimetype='multipart/x-mixed-replace; boundary=pill_detect_frame')
+
+if __name__ == '__main__':
+    app.run(debug=True, host='127.0.0.1', port=1010)
