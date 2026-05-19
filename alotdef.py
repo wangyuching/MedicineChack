@@ -3,7 +3,7 @@ import numpy as np
 
 def get_target_obb(results, target_cls):
     filtered_boxes = []
-    name = ["bedtime_Word", "lid_close", "lid_hinge", "lid_open", "pill_box"]
+    # name = ["bedtime_Word", "lid_close", "lid_hinge", "lid_open", "pill_box"]
 
     for r in results:
         classes = r.obb.cls

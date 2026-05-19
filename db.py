@@ -87,14 +87,14 @@ def save_frame(frame, current_slots_data, tracker, duration, missing):
                 elapsed_time = t.time() - tracker['open_start_time']
 
                 if elapsed_time > duration:
-                    slot_details = []
-                    for idx in current_opens:
-                        pill_state = "Full" if current_slots_data[idx]['Has_pill'] else "Empty"
-                        slot_details.append(f"slot{idx}_{pill_state}")
-                    slots_str = "_".join(slot_details)
-                    timestamp = t.strftime("%Y%m%d_%H%M%S")
-                    filename = f"saved_slots/{timestamp}_{slots_str}.png"
-                    cv2.imwrite(filename, frame)
+                    slot_details = []#will delete at fininal
+                    for idx in current_opens:#will delete at fininal
+                        pill_state = "Full" if current_slots_data[idx]['Has_pill'] else "Empty"#will delete at fininal
+                        slot_details.append(f"slot{idx}_{pill_state}")#will delete at fininal
+                    slots_str = "_".join(slot_details)#will delete at fininal
+                    timestamp = t.strftime("%Y%m%d_%H%M%S")#will delete at fininal
+                    filename = f"saved_slots/{timestamp}_{slots_str}.png"#will delete at fininal
+                    cv2.imwrite(filename, frame)#will delete at fininal
 
                     db_manager.insert_pill_data(current_slots_data, frame)
                     tracker['triggered'] = True
