@@ -28,6 +28,19 @@
             align-items: center;
         } 
 
+        .text {
+            width: 80%;
+            height: 80%;
+            background-color: rgb(8, 18, 26);
+            color: rgb(22, 239, 18);
+            font-size: 18px;
+            text-align: center;
+            padding: 15px 0px 15px 0px;
+            overflow-y: hidden;
+            white-space: pre-line;
+            flex-grow: 1;
+        }
+
         img {
             max-width: 100%;
             max-height: 100%;
@@ -36,9 +49,44 @@
 </head>
 
 <body>
-    <div class="content">        
+    <div class="content">
+        <div class="time-container" style="width: 30%; display: flex; flex-direction: column; height: 90%;">
+            <div class="text" id="log-content">載入中...請稍候...</div>
+        </div>
         <img src="{{ url_for('cap_in_html') }}" alt="Video Stream">
     </div>
 </body>
 
 </html>
+
+<script>
+    function refreshTable() {
+        fetch('/api/history')
+            .then(response => response.json())
+            .then(data => {
+                const logContent = document.getElementById("log-content");
+
+                if (data.length === 0) {
+                    logContent.innerHTML = '目前沒有記錄。';
+                    return;
+                }
+
+                let htmlContent = "";
+                data.reverse().forEach(row => {
+                    htmlContent += `
+                        <p style="line-height: 1;">${row.dt}</p>
+                    `;
+                });
+
+                // 將產生的 HTML 塞回 logContent
+                logContent.innerHTML = htmlContent;
+            })
+            .catch(error => console.error('Error fetching data:', error));
+    }
+
+    // 設定定時器：每 1 秒 (1000 毫秒) 執行一次 refreshTable
+    setInterval(refreshTable, 1000);
+
+    // 頁面載入完成後先執行一次
+    window.onload = refreshTable;
+</script>
