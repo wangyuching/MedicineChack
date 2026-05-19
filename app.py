@@ -40,7 +40,7 @@ while cap.isOpened():
     else:
         frame = cv2.resize(frame, (640, 480))
 
-        results = model(frame)
+        results = model(frame, verbose=False)
         annotated_frame = results[0].plot()
         annotated_frame = cv2.resize(annotated_frame, (640, 480))
 
@@ -97,8 +97,6 @@ while cap.isOpened():
                     missing=5.0
                 )
 
-            else:
-                print("Cant find any lids.")
         else:
             print("Cant find object pill_box.")
 
