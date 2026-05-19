@@ -67,3 +67,49 @@ class PillManager:
                 db.session.rollback()
                 print(f"Error inserting data: {e}")
         
+def save_frame(frame, current_slots_data, tracker, duration, missing):
+    current_opens = [
+        idx for idx, 
+        data in current_slots_data.items() 
+        if data['lid'] == "Open"
+    ]
+
+    if len(current_opens) > 0:
+        tracker['missing_start_time'] = None
+
+        if current_opens != tracker['active_opens']:
+            tracker['active_opens'] = current_opens
+            tracker['open_start_time'] = t.time()
+            tracker['triggered'] = False
+
+        else:
+            if tracker['open_start_time'] is not None and not tracker['triggered']:
+                elapsed_time = t.time() - tracker['open_start_time']
+
+                if elapsed_time > duration:
+                    slot_details = []
+                    for idx in current_opens:
+                        pill_state = "Full" if current_slots_data[idx]['Has_pill'] else "Empty"
+                        slot_details.append(f"slot{idx}_{pill_state}")
+                    slots_str = "_".join(slot_details)
+                    timestamp = t.strftime("%Y%m%d_%H%M%S")
+                    filename = f"saved_slots/{timestamp}_{slots_str}.png"
+                    cv2.imwrite(filename, frame)
+
+                    db_manager.insert_pill_data(current_slots_data, frame)
+                    tracker['triggered'] = True
+    
+    else:
+        if tracker['open_start_time'] is not None:
+            if tracker['missing_start_time'] is None:
+                tracker['missing_start_time'] = t.time()
+
+            lost_duration = t.time() - tracker['missing_start_time']
+
+            if lost_duration > missing:
+                tracker['active_opens'] = []
+                tracker['open_start_time'] = None
+                tracker['missing_start_time'] = None
+                tracker['triggered'] = False
+
+db_manager = PillManager()
