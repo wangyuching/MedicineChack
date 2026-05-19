@@ -28,7 +28,7 @@ def get_target_obb(results, target_cls):
             print(f"There's no objects for Class {target_cls}")
         
         for box in target_boxes:
-            filtered_boxes.append(box.numpy()) #.astype(np.int32)
+            filtered_boxes.append(box.cpu().numpy()) #.astype(np.int32)
             
         return filtered_boxes
 
