@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
 import time as t
-from app import insert_pill_data
 
 def get_target_obb(results, target_cls):
     filtered_boxes = []
@@ -159,7 +158,7 @@ def draw_slot_states(image, box, slot_idx, slot_data):
         pill_label = f"{pill_state}"
         cv2.putText(image, pill_label, (int(x) - 30, int(y) + 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)    
 
-def save_frame(frame, current_slots_data, tracker, duration, missing):
+def save_frame(frame, current_slots_data, tracker, duration, missing, db_insert):
     current_opens = [
         idx for idx, 
         data in current_slots_data.items() 
@@ -188,7 +187,7 @@ def save_frame(frame, current_slots_data, tracker, duration, missing):
                     filename = f"saved_slots/{timestamp}_{slots_str}.png"#will delete at fininal
                     cv2.imwrite(filename, frame)#will delete at fininal
 
-                    insert_pill_data(current_slots_data, frame)
+                    db_insert(current_slots_data, frame)
                     tracker['triggered'] = True
     
     else:

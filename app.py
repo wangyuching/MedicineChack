@@ -142,7 +142,8 @@ def cap_real_time():
                         current_slots_data=slots_data,
                         tracker=same_time_tracker,
                         duration=5.0,
-                        missing=5.0
+                        missing=5.0,
+                        db_insert=insert_pill_data
                     )
 
             else:
