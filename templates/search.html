@@ -173,6 +173,7 @@
 
         if (allData.length === 0) {
             logContent.innerHTML = '<div class="text-center fs-5">目前沒有記錄。</div>';
+            const pageInfo = document.getElementById("page-info");
             if (pageInfo) pageInfo.innerHTML = '<span class="fw-bold text-dark mx-2">第 0 頁</span>';
             document.getElementById("btn-prev").disabled = true;
             document.getElementById("btn-next").disabled = true;
@@ -183,10 +184,19 @@
         if (currentPage > totalPages) currentPage = totalPages;
         if (currentPage < 1) currentPage = 1;
 
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
-        const pageData = allData.slice(startIndex, endIndex);
+        const remainder = allData.length % itemsPerPage;
+        const firstPageItem = remainder === 0 ? itemsPerPage : remainder;
+        let startIndex, endIndex;
 
+        if (currentPage === 1){
+            startIndex = 0;
+            endIndex = firstPageItem;
+        } else {
+            startIndex = firstPageItem + (currentPage - 2) * itemsPerPage;
+            endIndex = startIndex + itemsPerPage;
+        }
+
+        const pageData = allData.slice(startIndex, endIndex);
         const groupedData = {};
         pageData.forEach((row, index) => {
             const globalIndex = startIndex + index;
