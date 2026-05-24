@@ -202,4 +202,4 @@ def cap_in_html():
     return Response(cap_real_time(), mimetype='multipart/x-mixed-replace; boundary=pill_detect_frame')
 
 if __name__ == '__main__':
-    app.run(debug=True, host='127.0.0.1', port=1010)
+    app.run(debug=False, host='127.0.0.1', port=1010)
