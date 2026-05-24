@@ -8,7 +8,7 @@
     <title>Take Medicine</title>
     <style>
         body {
-            background-color: rgb(229, 235, 240);
+            background-color: rgb(240, 244, 247);
             margin: 0;
             width: 100vw;
             height: 100vh;
@@ -16,8 +16,8 @@
             flex-direction: row;
             justify-content: space-evenly;
             align-items: center;
-        }              
-        
+        }
+
         .pageChange {
             position: fixed;
             top: 0;
@@ -42,31 +42,40 @@
         }
 
         .content {
-            margin: 0;
-            width: 90vw;
+            margin-left: 60px;
+            width: calc(100vw - 80px);
             height: 100vh;
             display: flex;
             flex-direction: row;
             justify-content: space-evenly;
             align-items: center;
-        } 
+        }
 
-        .time {
-            width: 80%;
-            height: 80%;
+        .log-container {
+            width: 20%;
+            height: 85%;
             background-color: rgb(233, 245, 254);
             color: rgb(8, 24, 94);
-            font-size: 18px;
-            text-align: center;
-            padding: 15px 0px 15px 0px;
-            overflow-y: hidden;
-            white-space: pre-line;
-            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            border-radius: 8px;
+        }
+
+        .video-container {
+            width: 70%;
+            height: 85%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(0, 0, 0, 0.05);
+            border-radius: 8px;
+            overflow: hidden;
         }
 
         img {
-            max-width: 100%;
-            max-height: 100%;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
         }
     </style>
 </head>
@@ -78,11 +87,13 @@
     </div>
 
     <div class="content">
-        <div class="time-container" style="width: 30%; display: flex; flex-direction: column; height: 90%;">
-            <div class="time" id="log-content">載入中...請稍候...</div>
+        <div class="log-container">
+            <div class="log" id="log-content">載入中...請稍候...</div>
         </div>
         
-        <img src="{{ url_for('cap_in_html') }}" alt="Video Stream">
+        <div class="video-container">
+            <img src="{{ url_for('cap_in_html') }}" alt="Video Stream">
+        </div>
     </div>
 </body>
 
@@ -90,13 +101,11 @@
 
 <script>
     function refreshTable() {
-        // 發送請求到我們剛寫好的 API
         fetch('/api/history')
             .then(response => response.json())
             .then(data => {
                 const logContent = document.getElementById("log-content");
 
-                // 如果沒有資料，顯示提示
                 if (data.length === 0) {
                     logContent.innerHTML = '目前沒有記錄。';
                     return;
@@ -104,11 +113,11 @@
 
                 let htmlContent = "";
                 [...data].reverse().forEach((row, index) => {
-
-                    const isLatest = index === 0 ? '<span class="badge bg-success">最新紀錄</span>' : '';
-
+                    const isLatest = index === 0 ? '<span class="badge bg-success ms-1">最新紀錄</span>' : '';
                     htmlContent += `
-                        <p style="line-height: 1;">${row.dt} ${isLatest}</p>
+                        <p style="line-height: 1.5; border-bottom: 1px dashed rgba(8, 24, 94, 0.2); padding-bottom: 8px;">
+                            ${row.dt} ${isLatest}
+                        </p>
                     `;
                 });
 

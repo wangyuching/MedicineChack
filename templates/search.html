@@ -1,4 +1,4 @@
-#顯示蓋子為開且沒有要的圖片的紀錄
+<!-- 顯示蓋子為開且沒有要的圖片的紀錄 -->
 <!DOCTYPE html>
 <html lang="en">
 
@@ -17,8 +17,8 @@
             flex-direction: row;
             justify-content: space-evenly;
             align-items: center;
-        }              
-        
+        }
+
         .pageChange {
             position: fixed;
             top: 0;
@@ -45,15 +45,15 @@
         .content {
             margin-left: 60px;
             width: calc(100vw - 80px);
-            height: 90vh;
+            height: 95vh;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             align-items: center;
-        } 
+        }
 
         .log-container {
-            width: 95%;
+            width: 100%;
             height: 85%;
             background-color: rgb(233, 245, 254);
             color: rgb(8, 24, 94);
@@ -66,7 +66,8 @@
             margin-bottom: 25px;
         }
 
-        .data-title {font-size: 20px;
+        .data-title {
+            font-size: 20px;
             font-weight: bold;
             border-bottom: 2px solid rgb(118, 193, 255);
             padding-bottom: 5px;
@@ -74,16 +75,17 @@
             text-align: left;
         }
 
-        .record-grid {display: grid;
+        .record-grid {
+            display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 20px;
         }
-        
+
         .record-card {
             background: white;
             border-radius: 6px;
             padding: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -137,14 +139,14 @@
     </div>
 
     <div class="content">
-        <div class="log-container" style="width: 30%; display: flex; flex-direction: column; height: 90%;">
+        <div class="log-container">
             <div class="log" id="log-content">載入中...請稍候...</div>
         </div>
 
         <div class="pagination-container">
-            <button class="btn btn-secondary me-2" id="btn-prev">上一頁</button>
+            <button class="btn btn-secondary me-2" id="btn-prev" onclick="changePagination(-1)">上一頁</button>
             <span class="fw-bold text-dark me-2" id="page-info">第 1 頁</span>
-            <button class="btn btn-secondary" id="btn-next">下一頁</button>
+            <button class="btn btn-secondary" id="btn-next" onclick="changePagination(1)">下一頁</button>
         </div>
     </div>
 </body>
@@ -166,11 +168,12 @@
             .catch(error => console.error('Error fetching data:', error));
     }
 
-    function renderPage(){
-        const logContent = document.getElementById("log_content");
+    function renderPage() {
+        const logContent = document.getElementById("log-content");
 
-        if(allData.length === 0){
-            logContent.innerHTML = '<div class="text-center fs-5">目前沒有記錄。</div>';document.getElementById("page-numbers").innerHTML = '<span class="fw-bold text-dark mx-2">第 0 頁</span>';
+        if (allData.length === 0) {
+            logContent.innerHTML = '<div class="text-center fs-5">目前沒有記錄。</div>';
+            if (pageInfo) pageInfo.innerHTML = '<span class="fw-bold text-dark mx-2">第 0 頁</span>';
             document.getElementById("btn-prev").disabled = true;
             document.getElementById("btn-next").disabled = true;
             return;
@@ -185,9 +188,9 @@
         const pageData = allData.slice(startIndex, endIndex);
 
         const groupedData = {};
-        pageData.forEach((row, index)=> {
+        pageData.forEach((row, index) => {
             const globalIndex = startIndex + index;
-            const isLatest = globalIndex === 0 ;
+            const isLatest = globalIndex === 0;
 
             const dataStr = row.dt.split(" ")[0] || "未知日期";
             const timeStr = row.dt.split(" ")[1] || "未知時間";
@@ -216,7 +219,7 @@
                         <div class="img-container">
                 `;
 
-                if(row.img){
+                if (row.img) {
                     htmlContent += `<img src="data:image/jpeg;base64,${row.img}" alt="Record Image">`;
                 } else {
                     htmlContent += `<div class="no-image">沒有圖片</div>`;
@@ -232,13 +235,13 @@
                 </div>
             `;
         }
-        
+
         logContent.innerHTML = htmlContent;
 
         renderPaginationButtons(totalPages);
     }
 
-    function renderPaginationButtons(totalPages){
+    function renderPaginationButtons(totalPages) {
         const pageInfo = document.getElementById("page-info");
         let paginationHtml = "";
 
@@ -246,10 +249,10 @@
             for (let i = 1; i <= totalPages; i++) {
                 paginationHtml += createPageButton(i, i === currentPage);
             }
-        }else {
+        } else {
             paginationHtml += createPageButton(1, 1 === currentPage);
 
-            if(currentPage > 3) {
+            if (currentPage > 3) {
                 paginationHtml += `<span class="text-muted px-1">...</span>`;
             }
 
@@ -262,7 +265,7 @@
                 startPage = totalPages - 3;
             }
 
-            for(let i = startPage; i <= endPage; i++) {
+            for (let i = startPage; i <= endPage; i++) {
                 paginationHtml += createPageButton(i, i === currentPage);
             }
 
@@ -281,7 +284,7 @@
 
     function createPageButton(pageNum, isActive) {
         const btnClass = isActive ? 'btn btn-primary page-num-btn' : 'btn btn-outline-primary page-num-btn';
-        return `<button class="${btnClass}" onclick="goToPage(${pageNum})">${pageNum}</button>`;    
+        return `<button class="${btnClass}" onclick="goToPage(${pageNum})">${pageNum}</button>`;
     }
 
     function goToPage(pageNum) {
