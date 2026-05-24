@@ -197,7 +197,7 @@
         }
 
         const pageData = allData.slice(startIndex, endIndex);
-        const groupedData = {};
+        const groupedDataArray = [];
         pageData.forEach((row, index) => {
             const globalIndex = startIndex + index;
             const isLatest = globalIndex === 0;
@@ -205,22 +205,24 @@
             const dataStr = row.dt.split(" ")[0] || "未知日期";
             const timeStr = row.dt.split(" ")[1] || "未知時間";
 
-            if (!groupedData[dataStr]) {
-                groupedData[dataStr] = [];
+            let existingGroup = groupedDataArray.find(group => group.data === dataStr);
+            if (!existingGroup) {
+                existingGroup = { data: dataStr, records: [] };
+                groupedDataArray.push(existingGroup);
             }
-            groupedData[dataStr].push({ ...row, timeStr, isLatest });
+            existingGroup.records.push({ ...row, timeStr, isLatest });
         });
 
         let htmlContent = "";
 
-        for (const data in groupedData) {
+        groupedDataArray.forEach(group => {
             htmlContent += `
                 <div class="data-group">
-                    <div class="data-title">${data}</div>
+                    <div class="data-title">${group.data}</div>
                     <div class="record-grid">
             `;
 
-            groupedData[data].forEach(row => {
+            group.records.forEach(row => {
                 const badge = row.isLatest ? '<span class="badge bg-success ms-1">最新紀錄</span>' : '';
 
                 htmlContent += `
@@ -244,7 +246,7 @@
                     </div>
                 </div>
             `;
-        }
+        });
 
         logContent.innerHTML = htmlContent;
 
