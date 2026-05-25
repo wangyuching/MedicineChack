@@ -1,4 +1,5 @@
 let allData = [];
+let lastLatestRecordId = null;
 let groupedDataArray = [];
 let currentPage = 1;
 
@@ -9,10 +10,28 @@ function refreshTable() {
     fetch('/api/history')
         .then(response => response.json())
         .then(data => {
-            allData = [...data].reverse();
-            groupAllDataByDate();
-            renderPage();
-            renderCalendar();
+            if(!data || data.length === 0) {
+                allData = [];
+                lastLatestRecordId = null;
+                groupAllDataByDate();
+                renderPage();
+                renderCalendar();
+                return;
+            }
+
+            const currentLatestId = data[data.length - 1].id;
+            if(currentLatestId !== lastLatestRecordId) {
+                lastLatestRecordId = currentLatestId;
+                allData = [...data].reverse();
+                groupAllDataByDate();
+                renderPage();
+                renderCalendar();
+                // console.log(`[系統通知] 偵測到新資料 (${currentLatestId})，已更新網頁畫面。`);
+            }
+            // else{
+            //     console.log(`[系統通知] 沒有新資料，保持現有畫面。`);
+            // }
+
         })
         .catch(error => console.error('Error fetching data:', error));
 }
@@ -80,7 +99,10 @@ function renderPage() {
             `;
 
         if (row.img) {
-            htmlContent += `<img src="data:image/jpeg;base64,${row.img}" alt="Record Image">`;
+            htmlContent += `
+            <div class="img-wrapper" style="cursor: pointer;" onclick="openImageWindow('data:image/jpeg;base64,${row.img}')">
+                <img src="data:image/jpeg;base64,${row.img}" alt="Record Image">
+            </div>`;
         } else {
             htmlContent += `<div class="no-image">沒有圖片</div>`;
         }
@@ -242,6 +264,29 @@ document.addEventListener("click", function (event) {
         cal.style.display = "none";
     }
 });
+
+function openImageWindow(base64Data) {
+    const newWindow = window.open();
+    if (newWindow) {
+        newWindow.document.write(`
+            <html>
+                <head>
+                    <title>查看圖片</title>
+                    <style>
+                        body { margin: 0; background: #0e0e0e; display: flex; justify-content: center; align-items: center; height: 100vh; }
+                        img { max-width: 100%; max-height: 100%; object-fit: contain; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+                    </style>
+                </head>
+                <body>
+                    <img src="${base64Data}" alt="Record Image">
+                </body>
+            </html>
+        `);
+        newWindow.document.close();
+    } else {
+        alert("新分頁被瀏覽器彈出式視窗封鎖，請允許此網站彈出視窗。");
+    }
+}
 
 setInterval(refreshTable, 5000);
 
