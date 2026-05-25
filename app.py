@@ -1,4 +1,3 @@
-import os #will delete at fininal
 from ultralytics import YOLO
 import cv2
 import time as t
@@ -62,10 +61,6 @@ model = YOLO("best.pt", task="obb") #best.float32.tflite, best.onnx
 cap = cv2.VideoCapture(1)
 
 def cap_real_time():
-    saved_slots = "saved_slots"#will delete at fininal
-    if not os.path.exists(saved_slots):#will delete at fininal
-        os.makedirs(saved_slots)#will delete at fininal
-
     HSV_LOWER = np.array([0, 0, 255])
     HSV_UPPER = np.array([179, 255, 255])
 
@@ -88,8 +83,6 @@ def cap_real_time():
             frame = cv2.resize(frame, (640, 480))
 
             results = model(frame, verbose=False)
-            annotated_frame = results[0].plot()
-            annotated_frame = cv2.resize(annotated_frame, (640, 480))
 
             pill_detect_frame = frame.copy()
             pill_detect_frame = cv2.resize(pill_detect_frame, (640, 480))
@@ -150,15 +143,14 @@ def cap_real_time():
                 print("Cant find object pill_box.")
                 cv2.putText(pill_detect_frame, "WHERE IS THE PILL BOX?", (20, 250), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 3)
 
-            combined_frame = np.hstack((frame, annotated_frame, pill_detect_frame))
-            final_view = cv2.resize(combined_frame, (0, 0), fx=0.7, fy=0.7)
-
-            ret, jpeg = cv2.imencode('.jpg', pill_detect_frame)
+            ret, jpeg = cv2.imencode('.jpg', pill_detect_frame, [int(cv2.IMWRITE_JPEG_QUALITY), 50])
             pill_detect_frame = jpeg.tobytes()
             yield(
                 b'--pill_detect_frame\r\n'
                 b'Content-Type: image/jpeg\r\n\r\n' + pill_detect_frame + b'\r\n'
             )
+
+            t.sleep(0.2)
     cap.release()
 
 @app.route('/')

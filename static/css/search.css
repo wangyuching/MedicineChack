@@ -37,23 +37,17 @@ body {
     background-color: rgb(118, 193, 255);
 }
 
-/* 日曆圖示微調 */
 .calendar-toggle-btn i {
     writing-mode: horizontal-tb;
-    /* 讓圖示保持正向 */
     font-size: 18px;
     margin-bottom: 5px;
 }
 
-/* 浮動日曆主面板：絕對定位，不影響排版 */
 .floating-calendar {
     display: none;
-    /* 預設隱藏 */
     position: absolute;
     top: 110px;
-    /* 剛好在搜尋記錄按鈕下方 */
     left: 65px;
-    /* 避開側邊欄寬度 */
     width: 300px;
     background-color: white;
     border-radius: 8px;
@@ -90,11 +84,9 @@ body {
     border-radius: 4px;
     cursor: default;
     color: #ccc;
-    /* 預設非本月或無紀錄變淡 */
     position: relative;
 }
 
-/* 有紀錄的日期樣式 */
 .calendar-day.has-record {
     color: rgb(8, 24, 94);
     font-weight: bold;
@@ -108,7 +100,6 @@ body {
     color: white;
 }
 
-/* 當前分頁選中的日期 */
 .calendar-day.current-selected {
     background-color: rgb(8, 24, 94) !important;
     color: white !important;
