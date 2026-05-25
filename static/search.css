@@ -1,0 +1,207 @@
+body {
+    background-color: rgb(240, 244, 247);
+    margin: 0;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
+.pageChange {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+}
+
+.pageChange a,
+.calendar-toggle-btn {
+    color: rgb(8, 24, 94);
+    text-decoration: none;
+    padding: 15px 10px;
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    background-color: rgb(229, 235, 240);
+    margin-bottom: 2px;
+    border: none;
+    cursor: pointer;
+    text-align: center;
+}
+
+.pageChange a:hover,
+.calendar-toggle-btn:hover {
+    background-color: rgb(118, 193, 255);
+}
+
+/* 日曆圖示微調 */
+.calendar-toggle-btn i {
+    writing-mode: horizontal-tb;
+    /* 讓圖示保持正向 */
+    font-size: 18px;
+    margin-bottom: 5px;
+}
+
+/* 浮動日曆主面板：絕對定位，不影響排版 */
+.floating-calendar {
+    display: none;
+    /* 預設隱藏 */
+    position: absolute;
+    top: 110px;
+    /* 剛好在搜尋記錄按鈕下方 */
+    left: 65px;
+    /* 避開側邊欄寬度 */
+    width: 300px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    z-index: 1050;
+    padding: 15px;
+    color: rgb(8, 24, 94);
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+    text-align: center;
+    font-size: 13px;
+}
+
+.calendar-day-label {
+    font-weight: bold;
+    color: #6c757d;
+    padding-bottom: 5px;
+}
+
+.calendar-day {
+    padding: 6px 0;
+    border-radius: 4px;
+    cursor: default;
+    color: #ccc;
+    /* 預設非本月或無紀錄變淡 */
+    position: relative;
+}
+
+/* 有紀錄的日期樣式 */
+.calendar-day.has-record {
+    color: rgb(8, 24, 94);
+    font-weight: bold;
+    background-color: rgb(233, 245, 254);
+    cursor: pointer;
+    border: 1px solid rgb(118, 193, 255);
+}
+
+.calendar-day.has-record:hover {
+    background-color: rgb(118, 193, 255);
+    color: white;
+}
+
+/* 當前分頁選中的日期 */
+.calendar-day.current-selected {
+    background-color: rgb(8, 24, 94) !important;
+    color: white !important;
+}
+
+.content {
+    margin-left: 60px;
+    width: calc(100vw - 80px);
+    height: 95vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.log-container {
+    width: 100%;
+    height: 88%;
+    background-color: rgb(233, 245, 254);
+    color: rgb(8, 24, 94);
+    margin-bottom: 10px;
+    padding: 20px;
+    overflow-y: auto;
+    border-radius: 8px;
+}
+
+.data-group {
+    margin-bottom: 25px;
+}
+
+.data-title {
+    font-size: 20px;
+    font-weight: bold;
+    border-bottom: 2px solid rgb(118, 193, 255);
+    padding-bottom: 5px;
+    margin-bottom: 15px;
+    text-align: left;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.record-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.record-card {
+    background: white;
+    border-radius: 6px;
+    padding: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 250px;
+}
+
+.record-time {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.img-container {
+    width: 100%;
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.no-image {
+    color: rgb(255, 0, 0);
+    font-weight: bold;
+}
+
+.pagination-container {
+    margin-top: 10px;
+}
+
+.page-num-btn {
+    min-width: 38px;
+}
